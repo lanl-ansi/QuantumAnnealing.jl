@@ -1,0 +1,28 @@
+{
+  "id": 1,
+  "version": "1.0.0",
+  "description": "data for testing two qubit simulation",
+  "linear_terms": [
+    {"id": 304, "coeff": -1.0},
+    {"id": 308, "coeff": -1.0}
+  ],
+  "quadratic_terms": [
+     {"id_head": 308, "id_tail": 304, "coeff": -1.0}
+  ],
+  "variable_domain": "spin",
+  "variable_ids": [304,308],
+  "scale": 1.0,
+  "offset": 0.0,
+  "metadata": {},
+  "solutions": [
+    {
+      "evaluation": 8.0,
+      "id": 0,
+      "assignment": [
+        {"id": 304, "value": -1},
+        {"id": 308, "value": -1}
+      ],
+      "description": "solution example"
+    }
+  ]
+}

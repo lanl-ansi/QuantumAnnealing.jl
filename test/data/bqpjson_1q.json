@@ -1,0 +1,14 @@
+{
+  "description": "data for testing single qubit simulation",
+  "id": 0,
+  "linear_terms": [
+    {"coeff": 1.0, "id": 100}
+  ],
+  "quadratic_terms": [],
+  "scale": 1.0,
+  "offset": 0.0,
+  "variable_domain": "spin",
+  "variable_ids": [100],
+  "metadata": {},
+  "version": "1.0.0"
+}
