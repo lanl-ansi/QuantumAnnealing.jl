@@ -7,6 +7,7 @@ module QuantumAnnealing
     import DifferentialEquations
 
     include("base.jl")
+    include("ising.jl")
 
     include("simulate.jl")
     include("simulate_de.jl")

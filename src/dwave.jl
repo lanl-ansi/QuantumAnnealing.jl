@@ -274,19 +274,6 @@ function read_bqpjson(bqpjson_file::String)
 end
 
 
-function _eval_state_energy(state, ising_model)
-    energy = 0.0
-    for (ids,v) in ising_model
-        val = v
-        for qid in ids
-            val *= state[qid]
-        end
-        energy += val
-    end
-    return energy
-end
-
-
 function write_dwisc(outfile::String, ρ, ising_model, qubit_ids; simulated_num_reads=1e17, annealing_time=1000)
     dwisc_data = Dict()
     dwisc_data["variable_ids"] = qubit_ids
@@ -303,7 +290,7 @@ function write_dwisc(outfile::String, ρ, ising_model, qubit_ids; simulated_num_
     for state_int in 0:(2^n-1)
         prob = probs[state_int+1]
         spin_vector = binary2spin(int2binary(state_int, pad=n))
-        energy = _eval_state_energy(spin_vector, ising_model)
+        energy = eval_ising_state_energy(spin_vector, ising_model)
 
         sol_data = Dict(
             "energy" => energy,
