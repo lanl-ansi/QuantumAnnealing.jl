@@ -36,7 +36,7 @@ Increase the annealing time to approach the adiabatic limit,
 print_z_state_probabilities(ρ)
 ```
 
-Change the annealing schedule and observer different state probabilities,
+Change the annealing schedule and observe different state probabilities,
 ```
 ρ = simulate(ising_model, 10.0, AS_QUADRATIC)
 print_z_state_probabilities(ρ)

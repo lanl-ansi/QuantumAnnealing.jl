@@ -202,7 +202,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
         Ω2 = (Ω2Sched + Ω2Const)/2
 
-        #display(Ω2)
         U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
         U = U_next * U
 
