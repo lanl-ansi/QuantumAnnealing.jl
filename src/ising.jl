@@ -1,12 +1,12 @@
 ### Helper Functions for Classical Ising Models ###
 
 
-function eval_ising_state_energy(state::Vector, ising_model::Dict)
+function eval_ising_state_energy(spin_state::Vector, ising_model::Dict)
     energy = 0.0
     for (ids,v) in ising_model
         val = v
         for qid in ids
-            val *= state[qid]
+            val *= spin_state[qid]
         end
         energy += val
     end
@@ -26,7 +26,7 @@ function compute_state_energies(ising_model::Dict)
     return state_energy
 end
 
-function print_state_enrgies(ising_model::Dict)
+function print_state_energies(ising_model::Dict)
     state_energies = compute_state_energies(ising_model)
 
     energy_levels = Dict{Float64,Set{Int}}()
