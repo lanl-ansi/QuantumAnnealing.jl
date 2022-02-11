@@ -82,7 +82,7 @@ function print_ising_energy_levels(ising_model::Dict; limit=50)
             state_string = spin2braket(state)
             println("  $(state_string)")
         end
-        if limit > 0 && i > limit
+        if limit > 0 && i >= limit
             println("first $(i) of $(total_states) states shown")
             break
         end
