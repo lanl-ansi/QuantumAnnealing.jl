@@ -140,15 +140,29 @@ end
 
 """
 given a 2^n vector of probably values, prints each value and its associated
-state vector.
+state vector. `limit` is used to limit the total number of states that are
+printed. `sort` is used to re-order the states by most likely instead of the
+default which is numerical order from 0-to-(2^n-1)
 """
-function print_z_state_probabilities(density::Matrix)
+function print_z_state_probabilities(density::Matrix; limit=50, sort=false)
     probs = z_measure_probabilities(density)
     n = ceil(Int, log2(length(probs)))
-    for (i,pr) in enumerate(probs)
-        state = int2spin(i-1, pad=n)
+
+    prob_order = enumerate(probs)
+    if sort
+        prob_order = Base.sort(collect(prob_order), by=(x) -> x[2], rev=true)
+    end
+
+    i = 0
+    for (state_id,pr) in prob_order
+        state = int2spin(state_id-1, pad=n)
         state_string = spin2braket(state)
         prob_string = rpad(round(pr, digits=6),8, " ")
         println("$(prob_string) $(state_string)")
+        i += 1
+        if i >= limit
+            println("first $(limit) of $(length(probs)) states shown")
+            break
+        end
     end
 end
