@@ -10,9 +10,24 @@
         @test int2binary(4, pad=4) == [0, 0, 1, 0]
     end
 
-    @testset "binary2int" begin
+    @testset "int2spin" begin
+        @test int2spin(0, pad=3) == [ 1,  1,  1]
+        @test int2spin(1, pad=3) == [-1,  1,  1]
+        @test int2spin(2, pad=3) == [ 1, -1,  1]
+        @test int2spin(4, pad=3) == [ 1,  1, -1]
+
+        @test int2spin(4, pad=4) == [1, 1, -1, 1]
+    end
+
+    @testset "int2binary/binary2int" begin
         for i in 0:16
             @test binary2int(int2binary(i, pad=10)) == i
+        end
+    end
+
+    @testset "int2spin/spin2int" begin
+        for i in 0:16
+            @test spin2int(int2spin(i, pad=10)) == i
         end
     end
 
@@ -23,6 +38,13 @@
         @test binary2spin([0, 0, 1]) == [ 1,  1, -1]
     end
 
+    @testset "spin2binary" begin
+        @test spin2binary([ 1,  1,  1]) == [0, 0, 0]
+        @test spin2binary([-1,  1,  1]) == [1, 0, 0]
+        @test spin2binary([ 1, -1,  1]) == [0, 1, 0]
+        @test spin2binary([ 1,  1, -1]) == [0, 0, 1]
+    end
+
     @testset "binary2braket" begin
         @test binary2braket(int2binary(0, pad=3)) == "|000⟩"
         @test binary2braket(int2binary(1, pad=3)) == "|001⟩"
@@ -31,10 +53,10 @@
     end
 
     @testset "binary2braket" begin
-        @test spin2braket(binary2spin(int2binary(0, pad=3))) == "|↑↑↑⟩"
-        @test spin2braket(binary2spin(int2binary(1, pad=3))) == "|↑↑↓⟩"
-        @test spin2braket(binary2spin(int2binary(2, pad=3))) == "|↑↓↑⟩"
-        @test spin2braket(binary2spin(int2binary(4, pad=3))) == "|↓↑↑⟩"
+        @test spin2braket(int2spin(0, pad=3)) == "|↑↑↑⟩"
+        @test spin2braket(int2spin(1, pad=3)) == "|↑↑↓⟩"
+        @test spin2braket(int2spin(2, pad=3)) == "|↑↓↑⟩"
+        @test spin2braket(int2spin(4, pad=3)) == "|↓↑↑⟩"
     end
 
 end
