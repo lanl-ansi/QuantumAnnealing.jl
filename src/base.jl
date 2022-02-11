@@ -160,7 +160,7 @@ function print_z_state_probabilities(density::Matrix; limit=50, sort=false)
         prob_string = rpad(round(pr, digits=6),8, " ")
         println("$(prob_string) $(state_string)")
         i += 1
-        if i >= limit
+        if limit > 0 && i >= limit
             println("first $(limit) of $(length(probs)) states shown")
             break
         end
