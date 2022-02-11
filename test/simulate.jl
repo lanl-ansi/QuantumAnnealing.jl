@@ -446,8 +446,8 @@ end
         steps = 100
         numshots = 10
 
-        #random numbers between -1.0 and 1.0
-        z_bias = (Random.rand(numshots) .- 0.5)*2
+        # random numbers between -0.75 and 0.75
+        z_bias = (Random.rand(numshots) .- 0.5)*1.5
 
         bqpjson_file = "data/bqpjson_1q.json"
         dwisc_file = "tmp.json"
@@ -467,9 +467,9 @@ end
         steps = 100
         numshots = 10
 
-        #random numbers between -1.0 and 1.0
-        x_bias = (Random.rand(numshots) .- 0.5)*2
-        z_bias = (Random.rand(numshots) .- 0.5)*2
+        # random numbers between -0.75 and 0.75
+        x_bias = (Random.rand(numshots) .- 0.5)*1.5
+        z_bias = (Random.rand(numshots) .- 0.5)*1.5
 
         bqpjson_file = "data/bqpjson_1q.json"
         dwisc_file = "tmp.json"
