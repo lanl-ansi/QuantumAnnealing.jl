@@ -15,9 +15,9 @@
     end
 
     @testset "int2spin" begin
-        @test int2binary(0) == []
-        @test int2binary(1) == [1]
-        @test int2binary(2) == [0,1]
+        @test int2spin(0) == []
+        @test int2spin(1) == [-1]
+        @test int2spin(2) == [1,-1]
 
         @test int2spin(0, pad=3) == [ 1,  1,  1]
         @test int2spin(1, pad=3) == [-1,  1,  1]
