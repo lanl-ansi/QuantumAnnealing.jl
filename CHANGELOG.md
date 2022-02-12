@@ -2,7 +2,7 @@ QuantumAnnealing.jl Change Log
 ==============================
 
 ### Staged
-- nothing
+- Add data processing tools (#6)
 
 ### v0.0.1
 - Initial release

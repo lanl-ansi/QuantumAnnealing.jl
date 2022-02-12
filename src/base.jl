@@ -68,7 +68,7 @@ converts a integer id into a binary state vector following the package conventio
 valid ints are from 0-to-2^n-1
 pad should be the total number qubits in the system
 """
-function int2binary(x; pad=0)
+function int2binary(x::Int; pad=0)
     return digits(x, base=2, pad=pad)
 end
 
@@ -85,6 +85,30 @@ converts a binary state vector (0/1) into an spin state vector (-1/1)
 """
 function binary2spin(states::Vector)
     return [v == 0 ? 1 : -1 for v in states]
+end
+
+"""
+converts a spin state vector into an integer id following the package conventions
+valid ints are from 0-to-2^n-1
+"""
+function spin2int(spin::Vector)
+    return binary2int(spin2binary(spin))
+end
+
+"""
+converts a integer id into a spin state vector following the package conventions
+valid ints are from 0-to-2^n-1
+pad should be the total number qubits in the system
+"""
+function int2spin(x::Int; pad=0)
+    return binary2spin(int2binary(x, pad=pad))
+end
+
+"""
+converts a spin state vector (-1/1) into an binary state vector (0/1)
+"""
+function spin2binary(spin::Vector)
+    return [i == 1 ? 0 : 1 for i in spin]
 end
 
 
@@ -116,15 +140,29 @@ end
 
 """
 given a 2^n vector of probably values, prints each value and its associated
-state vector.
+state vector. `limit` is used to limit the total number of states that are
+printed. `sort` is used to re-order the states by most likely instead of the
+default which is numerical order from 0-to-(2^n-1)
 """
-function print_z_state_probabilities(density::Matrix)
+function print_z_state_probabilities(density::Matrix; limit=50, sort=false)
     probs = z_measure_probabilities(density)
     n = ceil(Int, log2(length(probs)))
-    for (i,pr) in enumerate(probs)
-        state = binary2spin(int2binary(i-1, pad=n))
+
+    prob_order = enumerate(probs)
+    if sort
+        prob_order = Base.sort(collect(prob_order), by=(x) -> x[2], rev=true)
+    end
+
+    i = 0
+    for (state_id,pr) in prob_order
+        state = int2spin(state_id-1, pad=n)
         state_string = spin2braket(state)
         prob_string = rpad(round(pr, digits=6),8, " ")
         println("$(prob_string) $(state_string)")
+        i += 1
+        if limit > 0 && i >= limit
+            println("first $(limit) of $(length(probs)) states shown")
+            break
+        end
     end
 end
