@@ -1,6 +1,6 @@
 using DelimitedFiles
 
-# add a factor of 2x based on D-Wave hamiltonian convention
+# add a factor of 2x and sign inversion based on D-Wave Hamiltonian convention
 # https://docs.dwavesys.com/docs/latest/c_qpu_annealing.html
 A = (s) -> -2.0*cos(π/2*s)
 B = (s) ->  2.0*sin(π/2*s)

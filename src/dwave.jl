@@ -66,7 +66,7 @@ function _calc_linear_pwp(x_values, y_values)
 end
 
 
-# construct a spline based piecewise quadratic function
+# construct a spline-based piecewise quadratic function
 function _calc_quadratic_pwp(x_values, y_values)
     @assert(length(x_values) == length(y_values))
 
@@ -154,7 +154,7 @@ function parse_dwave_annealing_schedule(infile; header=1, delim=',', interpolati
         push!(b_values, row[3])
     end
 
-    # rescale based on D-Wave hamiltonian convention
+    # rescale and swap sign based on D-Wave hamiltonian convention
     # https://docs.dwavesys.com/docs/latest/c_qpu_annealing.html
     a_values = a_values ./ -2.0
     b_values = b_values ./ 2.0
@@ -289,7 +289,7 @@ function write_dwisc(outfile::String, ρ, ising_model, qubit_ids; simulated_num_
 
     for state_int in 0:(2^n-1)
         prob = probs[state_int+1]
-        spin_vector = binary2spin(int2binary(state_int, pad=n))
+        spin_vector = int2spin(state_int, pad=n)
         energy = eval_ising_state_energy(spin_vector, ising_model)
 
         sol_data = Dict(
@@ -328,6 +328,7 @@ function dwave_annealing_protocol(annealing_schedule::AnnealingSchedule; asch=[(
         s1,s_eff_1 = asch[i+1]
         asch_slopes[i] = (s_eff_1 - s_eff_0)/(s1 - s0)
     end
+
     #branchless piecewise function using linear interpolation from y = m*(x-x0) + y0
     function asch_func(s)
         return sum([(asch_slopes[i]*(s-asch[i][1]) + asch[i][2]) * (asch[i][1] <= s < asch[i+1][1]) for i = 1:(length(asch)-1)]) + ((s == asch[end][1])*asch[end][2])
