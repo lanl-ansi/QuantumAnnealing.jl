@@ -107,7 +107,7 @@ end
 """
 converts a spin state vector (-1/1) into an binary state vector (0/1)
 """
-function spin2binary(spin)
+function spin2binary(spin::Vector)
     return [i == 1 ? 0 : 1 for i in spin]
 end
 
