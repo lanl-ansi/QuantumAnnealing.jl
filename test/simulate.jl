@@ -351,6 +351,26 @@ end
 end
 
 
+
+@testset "two qubit, print energy levels" begin
+    mktemp() do path,io
+        out = stdout
+        err = stderr
+        redirect_stdout(io)
+        redirect_stderr(io)
+
+        ρ = simulate(Dict((1,2) => -1), 1.0, AS_CIRCULAR, 100)
+        print_z_state_probabilities(ρ)
+        print_z_state_probabilities(ρ, sort=true)
+        print_z_state_probabilities(ρ, sort=true, limit=2)
+
+        flush(io)
+        redirect_stdout(out)
+        redirect_stderr(err)
+    end
+end
+
+
 @testset "simulate_de" begin
 
     @testset "1 qubit, function schedule, analytical solution" begin
