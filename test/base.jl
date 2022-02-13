@@ -104,6 +104,24 @@ end
         @test energy_levels[1.0] == Set([1,2])
     end
 
+    @testset "two qubit, print energy levels" begin
+        mktemp() do path,io
+            out = stdout
+            err = stderr
+            redirect_stdout(io)
+            redirect_stderr(io)
+
+            print_ising_energy_levels(Dict((1,2) => -1))
+            print_ising_energy_levels(Dict((1,2) => -1), limit=0)
+            print_ising_energy_levels(Dict((1,2) => -1), limit=1)
+            print_ising_energy_levels(Dict((1,2) => -1), limit=10)
+
+            flush(io)
+            redirect_stdout(out)
+            redirect_stderr(err)
+        end
+    end
+
 end
 
 @testset "csv annealing schedules" begin
