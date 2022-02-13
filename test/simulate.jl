@@ -352,7 +352,7 @@ end
 
 
 
-@testset "two qubit, print energy levels" begin
+@testset "two qubit, print z state probabilities" begin
     mktemp() do path,io
         out = stdout
         err = stderr
