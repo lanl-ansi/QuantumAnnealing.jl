@@ -51,39 +51,28 @@ end
 
 """
 given an Ising model prints state strings by ascending energy levels.
-`limit` is used the stop the printing after a number of states have been
+`limit` is used the stop the printing after a number of energy levels have been
 presented (`limit` <= 0 will print all states).
 """
-function print_ising_energy_levels(ising_model::Dict; limit=50)
-    n = 1
-
-    for (k,v) in ising_model
-        for qid in k
-            if qid > n
-                n = qid
-            end
-        end
-    end
-
-    total_states = 2^n
-
+function print_ising_energy_levels(ising_model::Dict; limit=3)
+    n = maximum(max(k...) for (k,v) in ising_model)
 
     energy_levels = compute_ising_energy_levels(ising_model)
 
     energies = sort(collect(keys(energy_levels)))
 
-    i = 0
-    for energy in energies
-        println("\033[1menergy: $(energy)\033[0m")
+    for (i,energy) in enumerate(energies)
         state_ids = energy_levels[energy]
-        i += length(state_ids)
+
+        println("\033[1menergy: $(energy)\033[0m")
         for state_id in sort(collect(state_ids))
             state = binary2spin(int2binary(state_id, pad=n))
             state_string = spin2braket(state)
             println("  $(state_string)")
         end
+
         if limit > 0 && i >= limit
-            println("first $(i) of $(total_states) states shown")
+            println("first $(i) of $(length(energy_levels)) energy levels shown")
             break
         end
     end
