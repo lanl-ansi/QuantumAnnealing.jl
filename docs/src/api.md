@@ -32,6 +32,14 @@ AS_CIRCULAR
 AS_DW_QUADRATIC
 ```
 
+## Ising Functions
+```@autodocs
+Modules = [QuantumAnnealing]
+Pages   = ["ising.jl"]
+Order   = [:function]
+Private  = true
+```
+
 # D-Wave Functions
 ```@autodocs
 Modules = [QuantumAnnealing]

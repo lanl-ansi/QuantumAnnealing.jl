@@ -69,6 +69,42 @@
 
 end
 
+@testset "ising energy computations" begin
+
+    @testset "single qubit, single state" begin
+        @test isapprox(eval_ising_state_energy([1],Dict((1,) => 1)), 1)
+        @test isapprox(eval_ising_state_energy([-1],Dict((1,) => 1)), -1)
+    end
+
+    @testset "single qubit, all states" begin
+        energies = compute_ising_state_energies(Dict((1,) => 1))
+        @test isapprox(energies[0], 1)
+        @test isapprox(energies[1], -1)
+    end
+
+    @testset "two qubit, single state" begin
+        ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
+        @test isapprox(eval_ising_state_energy([1, 1], ising_model), 1)
+        @test isapprox(eval_ising_state_energy([1, -1], ising_model), 1)
+        @test isapprox(eval_ising_state_energy([-1, 1], ising_model), 1)
+        @test isapprox(eval_ising_state_energy([-1, -1], ising_model), -3)
+    end
+
+    @testset "two qubit, all state energies" begin
+        energies = compute_ising_state_energies(Dict((1,) => 1, (1,2) => -1))
+        @test isapprox(energies[0], 0)
+        @test isapprox(energies[1], 0)
+        @test isapprox(energies[2], 2)
+        @test isapprox(energies[3], -2)
+    end
+
+    @testset "two qubit, energy levels" begin
+        energy_levels = compute_ising_energy_levels(Dict((1,2) => -1))
+        @test energy_levels[-1.0] == Set([0,3])
+        @test energy_levels[1.0] == Set([1,2])
+    end
+
+end
 
 @testset "csv annealing schedules" begin
     s_100 = range(0, 1, length=100)
