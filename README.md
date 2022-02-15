@@ -24,23 +24,26 @@ using QuantumAnnealing
 ising_model = Dict((1,) => 0.1, (1,2) => -1.0)
 ```
 
-Perform a basic simulation with an annealing time of `2.0` and the trigonometric annealing schedule,
+Perform a basic simulation with an annealing time of `1.0` and a linear annealing schedule,
 ```
-ρ = simulate(ising_model, 2.0, AS_CIRCULAR)
+ρ = simulate(ising_model, 1.0, AS_LINEAR)
 print_z_state_probabilities(ρ)
 ```
 
 Increase the annealing time to approach the adiabatic limit,
 ```
-ρ = simulate(ising_model, 10.0, AS_CIRCULAR)
+ρ = simulate(ising_model, 5.0, AS_LINEAR)
 print_z_state_probabilities(ρ)
 ```
 
 Change the annealing schedule and observe different state probabilities,
 ```
-ρ = simulate(ising_model, 10.0, AS_QUADRATIC)
+ρ = simulate(ising_model, 5.0, AS_QUADRATIC)
 print_z_state_probabilities(ρ)
 ```
+
+For a more comprehensive introduction see the [package documentation](https://lanl-ansi.github.io/QuantumAnnealing.jl/stable/).
+
 
 # License
 This software is provided under a BSD-ish license with a "modifications must be indicated" clause.  See the `LICENSE.md` file for the full text. This package is part of the Hybrid Quantum-Classical Computing suite, known internally as LA-CC-16-032.
