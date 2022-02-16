@@ -122,6 +122,18 @@ end
         end
     end
 
+    @testset "transverse ising hamiltonian building" begin
+        ising_model = Dict((1,) => 1)
+        annealing_schedule = AS_CIRCULAR
+
+        H_00 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 0.0)
+        H_05 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 0.5)
+        H_10 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 1.0)
+
+        @test isapprox(H_00, [0 1; 1 0])
+        @test isapprox(H_05, [1/sqrt(2) 1/sqrt(2); 1/sqrt(2) -1/sqrt(2)])
+        @test isapprox(H_10, [1 0; 0 -1])
+    end
 end
 
 @testset "csv annealing schedules" begin
