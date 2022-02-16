@@ -58,7 +58,7 @@ function sum_y(n::Int, w::Vector)
 end
 
 function sum_z(n::Int)
-    return tensor_sum_single_qubit(ZMAT, n, w)
+    return tensor_sum_single_qubit(ZMAT, n)
 end
 
 function sum_z(n::Int, w::Vector)
@@ -86,6 +86,30 @@ function sum_z_tup(n, tup, w)
     Zvec = [1;-1]
     matvec = [k in tup ? Zvec : Ivec for k in n:-1:1]
     return SparseArrays.spdiagm(complex(w * foldl(kron, matvec)))
+end
+
+"""
+Function to build the transverse field Ising model hamiltonian at a given
+unitless timestep `s`.
+
+Arguments:
+ising_model - ising model represented as a dictionary.  The qubits
+              and couplings are represented as tuples, and the weights
+              are numbers.
+              For Example: im = Dict((1,) => 1, (2,) => 0.5, (1,2) => 2)
+annealing_schedule - The annealing schedule, of the form given by the struct
+s - the imaginary timestep. This should usually be in the range from 0.0-to-1.0
+"""
+function transverse_ising_hamiltonian(ising_model::Dict, annealing_schedule::AnnealingSchedule, s::Real)
+    n = _check_ising_model_ids(ising_model)
+
+    x_component = sum_x(n)
+    z_component = SparseArrays.spzeros(2^n, 2^n)
+    for (tup,w) in ising_model
+        z_component = z_component + sum_z_tup(n, tup, w)
+    end
+
+    return annealing_schedule.A(s) * x_component + annealing_schedule.B(s) * z_component
 end
 
 

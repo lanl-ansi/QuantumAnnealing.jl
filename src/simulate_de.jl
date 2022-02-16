@@ -32,19 +32,10 @@ function simulate_de(ising_model, annealing_time, annealing_schedule; initial_st
         constant_field_z = zeros(n)
     end
 
-    x_component = sum_x(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
-    end
-
-    A = annealing_schedule.A
-    B = annealing_schedule.B
-
     const_x_component = sum_x(n, constant_field_x)
     const_z_component = sum_z(n, constant_field_z)
 
-    H(s) = A(s) * x_component + B(s) * z_component + const_x_component + const_z_component
+    H(s) = transverse_ising_hamiltonian(ising_model, annealing_schedule, s) + const_x_component + const_z_component
     schrod_eq(state, time, s) = -im * time * H(s) * state
 
     s_range = (0.0, 1.0)
