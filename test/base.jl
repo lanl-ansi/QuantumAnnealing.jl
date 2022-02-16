@@ -100,8 +100,10 @@ end
 
     @testset "two qubit, energy levels" begin
         energy_levels = compute_ising_energy_levels(Dict((1,2) => -1))
-        @test energy_levels[-1.0] == Set([0,3])
-        @test energy_levels[1.0] == Set([1,2])
+        @test energy_levels[1].energy == -1.0
+        @test energy_levels[1].states == Set([0,3])
+        @test energy_levels[2].energy == 1.0
+        @test energy_levels[2].states == Set([1,2])
     end
 
     @testset "two qubit, print energy levels" begin

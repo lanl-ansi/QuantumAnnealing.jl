@@ -46,7 +46,9 @@ function compute_ising_energy_levels(ising_model::Dict)
         push!(energy_levels[energy], state_id)
     end
 
-    return energy_levels
+    energies = sort(collect(keys(energy_levels)))
+
+    return [(energy=e, states=energy_levels[e]) for e in energies]
 end
 
 """
@@ -59,13 +61,9 @@ function print_ising_energy_levels(ising_model::Dict; limit=3)
 
     energy_levels = compute_ising_energy_levels(ising_model)
 
-    energies = sort(collect(keys(energy_levels)))
-
-    for (i,energy) in enumerate(energies)
-        state_ids = energy_levels[energy]
-
-        println("\033[1menergy: $(energy)\033[0m")
-        for state_id in sort(collect(state_ids))
+    for (i,energy_level) in enumerate(energy_levels)
+        println("\033[1menergy: $(energy_level.energy)\033[0m")
+        for state_id in sort(collect(energy_level.states))
             state = binary2spin(int2binary(state_id, pad=n))
             state_string = spin2braket(state)
             println("  $(state_string)")
