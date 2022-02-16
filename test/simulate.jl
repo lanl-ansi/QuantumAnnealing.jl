@@ -54,7 +54,15 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
 
     @testset "1 qubit, function schedule, constant terms" begin
         ρ_target = [0.0578906+1.38778e-17im -0.165069-0.165202im; -0.165069+0.165202im 0.942109+0.0im]
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, constant_field_x = [1], constant_field_z = [1])
+        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x = [1], constant_field_z = [1])
+
+        # NOTE, atol required due to too few digits in target
+        @test isapprox(ρ_target, ρ, atol=1e-6)
+    end
+
+    @testset "1 qubit, function schedule, different initial state" begin
+        ρ_target = [0.326006+0.0im -0.413095-0.221536im; -0.413095+0.221536im 0.673994+0.0im]
+        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, initial_state = [0,1])
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
@@ -121,6 +129,18 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
         # NOTE, atol required due to pwc approximation in the schedule file
         @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-2)
         @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-3)
+    end
+
+    @testset "reverse annealing test" begin
+        ρ_target = [0.88389+0.0im -0.197484-0.252247im; -0.197484+0.252247im 0.11611+0.0im]
+
+        asch = [(0.0, 1.0), (0.5, 0.5), (1.0, 1.0)]
+        mod_asch = dwave_annealing_protocol(AS_LINEAR, asch=asch)
+
+        ρ = simulate(Dict((1,) => 0.1), 5.0, mod_asch, 100, initial_state = [0,1])
+
+        # NOTE, atol required due to too few digits in target
+        @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
     @testset "1 qubit probability trajectory, nonadaptive" begin
