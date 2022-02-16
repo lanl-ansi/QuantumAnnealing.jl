@@ -172,32 +172,6 @@ end
         @test isapprox(mod_asch.B.(ss_mod), annealing_schedule.B.(ss_reg))
     end
 
-    @testset "d-wave asch reverse annealing test" begin
-        annealing_schedule = AS_CIRCULAR
-
-        ising_model = Dict((1,) => 1)
-        ss = 0.0:0.001:1.0
-        ss_mod = 1.0:-0.001:0.0
-        asch = [(0.0, 1.0), (1.0, 0.0)]
-        mod_asch = dwave_annealing_protocol(annealing_schedule, asch = asch)
-        @test isapprox(mod_asch.A.(ss), annealing_schedule.A.(ss_mod))
-        @test isapprox(mod_asch.B.(ss), annealing_schedule.B.(ss_mod))
-        ρ = simulate(ising_model, 1000, mod_asch, initial_state = [0, 1], silence=true)
-        @test isapprox(z_measure_probabilities(ρ), [0.5, 0.5], atol=1e-3)
-        @test !isapprox(z_measure_probabilities(ρ), [0.5, 0.5], atol=1e-4)
-
-        asch = [(0.0, 1.0), (0.5, 0.5), (1.0, 1.0)]
-        mod_asch = dwave_annealing_protocol(annealing_schedule, asch = asch)
-        ss_reg = [1.0, 0.5, 1.0]
-        ss_mod = [0.0, 0.5, 1.0]
-        @test isapprox(mod_asch.A.(ss_mod), annealing_schedule.A.(ss_reg))
-        @test isapprox(mod_asch.B.(ss_mod), annealing_schedule.B.(ss_reg))
-
-        ρ = simulate(ising_model, 100.0, mod_asch, initial_state = [0,1], silence=true)
-        @test isapprox(z_measure_probabilities(ρ), [0.0, 1.0], atol = 1e-5)
-        @test !isapprox(z_measure_probabilities(ρ), [0.0, 1.0], atol = 1e-6)
-    end
-
 end
 
 
