@@ -122,6 +122,22 @@ end
         end
     end
 
+    @testset "Hamiltonian building" begin
+        ising_model = Dict((1,) => 1)
+        annealing_schedule = AS_CIRCULAR
+
+        H_no_const_fields_0 = build_hamiltonian(ising_model, annealing_schedule, 0)
+        H_no_const_fields_1 = build_hamiltonian(ising_model, annealing_schedule, 1)
+
+        @test isapprox(H_no_const_fields_0, [0 1; 1 0])
+        @test isapprox(H_no_const_fields_1, [1 0; 0 -1])
+
+        H_const_fields_0 = build_hamiltonian(ising_model, annealing_schedule, 0, constant_field_x = [1], constant_field_z = [1])
+        H_const_fields_1 = build_hamiltonian(ising_model, annealing_schedule, 1, constant_field_x = [1], constant_field_z = [1])
+
+        @test isapprox(H_const_fields_0, [1 2; 2 -1])
+        @test isapprox(H_const_fields_1, [2 1; 1 -2])
+    end
 end
 
 @testset "csv annealing schedules" begin
