@@ -89,7 +89,8 @@ function sum_z_tup(n, tup, w)
 end
 
 """
-Function to generate a hamiltonian at a given unitless timestep, s.
+Function to build the transverse field Ising model hamiltonian at a given
+unitless timestep `s`.
 
 Arguments:
 ising_model - ising model represented as a dictionary.  The qubits
@@ -97,13 +98,9 @@ ising_model - ising model represented as a dictionary.  The qubits
               are numbers.
               For Example: im = Dict((1,) => 1, (2,) => 0.5, (1,2) => 2)
 annealing_schedule - The annealing schedule, of the form given by the struct
-s - the imaginary timestep. This should usually be in the range(0,1)
-
-Parameters:
-constant_field_x - vector of constant biases in the X basis on each qubit. Default is zeros(n)
-constant_field_z - vector of constant biases in the Z basis on each qubit. Default is zeros(n)
+s - the imaginary timestep. This should usually be in the range from 0.0-to-1.0
 """
-function build_hamiltonian(ising_model::Dict, annealing_schedule::AnnealingSchedule, s::Real; constant_field_x = nothing, constant_field_z = nothing)
+function transverse_ising_hamiltonian(ising_model::Dict, annealing_schedule::AnnealingSchedule, s::Real)
     n = _check_ising_model_ids(ising_model)
 
     x_component = sum_x(n)
@@ -112,19 +109,9 @@ function build_hamiltonian(ising_model::Dict, annealing_schedule::AnnealingSched
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
-    const_x_component = sum_x(n, constant_field_x)
-    const_z_component = sum_z(n, constant_field_z)
-
-    return annealing_schedule.A(s) * x_component + annealing_schedule.B(s) * z_component + const_x_component + const_z_component
+    return annealing_schedule.A(s) * x_component + annealing_schedule.B(s) * z_component
 end
+
 
 function integral_1_sched(a_2, a_1, a_0, s0, δ)
     #TODO: Possibly change to integrate from s0 to s1 to allow

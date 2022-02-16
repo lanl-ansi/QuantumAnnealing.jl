@@ -36,7 +36,7 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
         @test isapprox(ρ_target, ρ)
     end
 
-    @testset "1 qubit, franctional field value" begin
+    @testset "1 qubit, fractional field value" begin
         ρ_target = [0.420186+0.0im -0.409634+0.275372im; -0.409634-0.275372im 0.579814+2.77556e-17im]
         ρ = simulate(Dict((1,) => 0.5), 1.0, AS_CIRCULAR, 100)
 
@@ -47,6 +47,14 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
     @testset "1 qubit, field value above 1.0" begin
         ρ_target = [0.291065-2.77556e-17im 0.114524+0.43958im; 0.114524-0.43958im 0.708935+5.55112e-17im]
         ρ = simulate(Dict((1,) => 1.5), 1.0, AS_CIRCULAR, 100)
+
+        # NOTE, atol required due to too few digits in target
+        @test isapprox(ρ_target, ρ, atol=1e-6)
+    end
+
+    @testset "1 qubit, function schedule, constant terms" begin
+        ρ_target = [0.0578906+1.38778e-17im -0.165069-0.165202im; -0.165069+0.165202im 0.942109+0.0im]
+        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, constant_field_x = [1], constant_field_z = [1])
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
@@ -377,6 +385,14 @@ end
         ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR)
 
         @test isapprox(single_spin_analytic_ρ, ρ)
+    end
+
+    @testset "1 qubit, function schedule, constant terms" begin
+        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, constant_field_x = [1], constant_field_z = [1])
+        ρ_de = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, constant_field_x = [1], constant_field_z = [1])
+
+        @test isapprox(ρ, ρ_de, atol=1e-7)
+        @test !isapprox(ρ, ρ_de, atol=1e-8)
     end
 
     @testset "1 qubit, csv schedule, analytical solution" begin
