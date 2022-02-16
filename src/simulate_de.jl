@@ -24,7 +24,18 @@ function simulate_de(ising_model, annealing_time, annealing_schedule; initial_st
         initial_state = annealing_schedule.init_default(n)
     end
 
-    H(s) = build_hamiltonian(ising_model, annealing_schedule, s, constant_field_x = constant_field_x, constant_field_z = constant_field_z)
+    if constant_field_x == nothing
+        constant_field_x = zeros(n)
+    end
+
+    if constant_field_z == nothing
+        constant_field_z = zeros(n)
+    end
+
+    const_x_component = sum_x(n, constant_field_x)
+    const_z_component = sum_z(n, constant_field_z)
+
+    H(s) = transverse_ising_hamiltonian(ising_model, annealing_schedule, s) + const_x_component + const_z_component
     schrod_eq(state, time, s) = -im * time * H(s) * state
 
     s_range = (0.0, 1.0)
