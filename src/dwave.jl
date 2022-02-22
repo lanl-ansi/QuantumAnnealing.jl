@@ -159,6 +159,10 @@ function parse_dwave_annealing_schedule(infile; header=1, delim=',', interpolati
     a_values = a_values ./ -2.0
     b_values = b_values ./ 2.0
 
+    # change from GHz to natural units (annealing time in nanoseconds)
+    a_values = a_values .* (2.0*π)
+    b_values = b_values .* (2.0*π)
+
     if interpolation == :none
         a_pwp = _calc_constant_pwp(s_values, a_values)
         b_pwp = _calc_constant_pwp(s_values, b_values)
