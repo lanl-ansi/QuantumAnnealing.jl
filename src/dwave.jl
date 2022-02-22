@@ -20,11 +20,11 @@ const AS_DW_QUADRATIC = AnnealingSchedule(
         if s >= 0.69
             return 0
         else
-            return -6.366401*((1.449275)^2*s^2 + (-2.898551)*s + 1.0)/2.0
+            return 6.366401*((1.449275)^2*s^2 + (-2.898551)*s + 1.0)/-2.0*(2.0*π)
         end
     end,
     function B(s)
-        return 14.55571*(0.85*s^2 + 0.15*s + 0.0)/2.0
+        return 14.55571*(0.85*s^2 + 0.15*s + 0.0)/2.0*(2.0*π)
     end,
     default_dwave_initial_state
 )

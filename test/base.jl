@@ -144,7 +144,7 @@ end
 
     @testset "piecewise constant" begin
         deltas = [AS_CIRCULAR.A(s) - AS_CIRCULAR_pwc_csv_100.A(s) for s in s_100]
-        @test isapprox(maximum(abs.(deltas)), 0.0)
+        @test isapprox(maximum(abs.(deltas)), 0.0, atol=1e-15)
 
         deltas = [AS_CIRCULAR.A(s) - AS_CIRCULAR_pwc_csv_100.A(s) for s in s_10000]
         @test isapprox(maximum(abs.(deltas)), 0.015708868493240165, atol=1e-5)
