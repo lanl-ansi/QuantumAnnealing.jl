@@ -20,11 +20,11 @@ const AS_DW_QUADRATIC = AnnealingSchedule(
         if s >= 0.69
             return 0
         else
-            return 6.366401*((1.449275)^2*s^2 + (-2.898551)*s + 1.0)/-2.0*(2.0*π)
+            return (6.366401*((1.449275)^2*s^2 + (-2.898551)*s + 1.0)*(2.0*π))/-2.0
         end
     end,
     function B(s)
-        return 14.55571*(0.85*s^2 + 0.15*s + 0.0)/2.0*(2.0*π)
+        return (14.55571*(0.85*s^2 + 0.15*s + 0.0)*(2.0*π))/2.0
     end,
     default_dwave_initial_state
 )
@@ -154,14 +154,14 @@ function parse_dwave_annealing_schedule(infile; header=1, delim=',', interpolati
         push!(b_values, row[3])
     end
 
+    # change from GHz to natural units (annealing time in nanoseconds)
+    a_values = a_values .* (2.0*π)
+    b_values = b_values .* (2.0*π)
+
     # rescale and swap sign based on D-Wave hamiltonian convention
     # https://docs.dwavesys.com/docs/latest/c_qpu_annealing.html
     a_values = a_values ./ -2.0
     b_values = b_values ./ 2.0
-
-    # change from GHz to natural units (annealing time in nanoseconds)
-    a_values = a_values .* (2.0*π)
-    b_values = b_values .* (2.0*π)
 
     if interpolation == :none
         a_pwp = _calc_constant_pwp(s_values, a_values)
