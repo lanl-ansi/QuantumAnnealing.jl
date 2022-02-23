@@ -52,7 +52,7 @@ end
 
 
 """
-A simplified interface to the `simulate_de` routine that determines a
+A simplified interface to the `simulate_de` routine that determines
 suitable tolerance values to ensure a high accuracy simulation.
 The parameters `mean_tol` and `max_tol` specify the desired simulation accuracy.
 The `silence` parameter can be used to suppress the progress log.
