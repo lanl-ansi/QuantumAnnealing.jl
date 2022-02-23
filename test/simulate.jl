@@ -399,28 +399,55 @@ end
 end
 
 
+
 @testset "simulate_de" begin
 
     @testset "1 qubit, function schedule, analytical solution" begin
-        ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR)
+        ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, 1e-6)
 
         @test isapprox(single_spin_analytic_ρ, ρ)
     end
 
     @testset "1 qubit, function schedule, constant terms" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, constant_field_x = [1], constant_field_z = [1])
-        ρ_de = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, constant_field_x = [1], constant_field_z = [1])
+        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x=[1], constant_field_z=[1])
+        ρ_de = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
 
-        @test isapprox(ρ, ρ_de, atol=1e-7)
-        @test !isapprox(ρ, ρ_de, atol=1e-8)
+        @test isapprox(ρ, ρ_de, atol=1e-8)
+        @test !isapprox(ρ, ρ_de, atol=1e-9)
     end
 
     @testset "1 qubit, csv schedule, analytical solution" begin
-        ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR_pwl_csv_1000)
-        simulation_prob = z_measure_probabilities(ρ)[1]
+        ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR_pwl_csv_1000, 1e-6)
 
         @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-6)
         @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-7)
+    end
+
+    @testset "2 qubit, function schedule" begin
+        ising_model = Dict((1,) => -0.1, (2,) => -1, (1,2) => -1)
+        ρ = simulate(ising_model, 1.0, AS_CIRCULAR, 100)
+        ρ_de = simulate_de(ising_model, 1.0, AS_CIRCULAR, 1e-6)
+
+        @test isapprox(ρ, ρ_de, atol=1e-8)
+        @test !isapprox(ρ, ρ_de, atol=1e-9)
+    end
+
+    @testset "2 qubit, function schedule, long annealing time" begin
+        ising_model = Dict((1,) => -0.1, (2,) => -1, (1,2) => -1)
+        ρ = simulate(ising_model, 1000.0, AS_CIRCULAR, 4000)
+        ρ_de = simulate_de(ising_model, 1000.0, AS_CIRCULAR, 1e-7)
+
+        @test isapprox(ρ, ρ_de, atol=1e-6)
+        @test !isapprox(ρ, ρ_de, atol=1e-7)
+    end
+
+    @testset "2 qubit, function schedule, adaptive tolerance" begin
+        ising_model = Dict((1,) => -0.1, (2,) => -1, (1,2) => -1)
+        ρ = simulate(ising_model, 100.0, AS_CIRCULAR, 1000)
+        ρ_de = simulate_de(ising_model, 100.0, AS_CIRCULAR, silence=true)
+
+        @test isapprox(ρ, ρ_de, atol=1e-6)
+        @test !isapprox(ρ, ρ_de, atol=1e-7)
     end
 
 end
