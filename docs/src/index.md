@@ -8,7 +8,7 @@ CurrentModule = QuantumAnnealing
 
 QuantumAnnealing is a Julia package for simulation of quantum annealing protocols.
 Due to the complexity of modeling quantum systems QuantumAnnealing is not expected to scale to systems with more than 20 qubits.
-QuantumAnnealing provides tools for emulating the quantum annealing protocols that are implemented in hardware by D-Wave Systems.
+QuantumAnnealing also provides tools for emulating the quantum annealing protocols that are implemented in hardware by D-Wave Systems.
 
 
 ## Installation
@@ -35,7 +35,7 @@ Test that the package works by running
 ## What is Quantum Annealing?
 
 The objective of QuantumAnnealing is to solve ODEs arising in dynamic quantum systems.
-Specifically it solves the Schrödinger equation with a time dependent Hamiltonian $H(t)$, acting over a set of 1-to-$n$ qubits, as follows,
+Specifically it solves the Schrödinger equation with a time dependent Hamiltonian $H(t)$, acting over a set of $n$ qubits in natural units, as follows,
 ```math
 i \frac{d}{dt}\left|\Psi(t)\right\rangle = H(t)\left|\Psi(t)\right\rangle
 ```
@@ -156,3 +156,10 @@ QuantumAnnealing assumes that annealing functions are univariate and specified o
 The sign conventions of this implementation ensure that:
 - Hamiltonians with positive fields, i.e. $h>0$, are minimized by $\left|\downarrow\right\rangle$ states in the adiabatic limit.
 - Hamiltonians with negative couplings, i.e. $J<0$, are ferromagnetic and are minimized by $\left|\uparrow \uparrow \right\rangle$ and $\left|\downarrow \downarrow \right\rangle$ states in the adiabatic limit.
+
+
+### Units
+
+The underlying mathematics of QuantumAnnealing assumes a natural unit system. However, in practice it is convent to define the annealing schedule in terms of gigahertz (GHz) and in this case after applying a suitable Plank constant the annealing time has units of nanoseconds.
+The Ising model parameters are not assumed to be given any particular units but it is common to use values of $h,J$ in the range of -1.0-to-1.0.
+

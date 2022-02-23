@@ -84,8 +84,8 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, function schedule (AS_DW_QUADRATIC), default anneal time, analytical solution" begin
-        ρ_target = [0.420653+0.0im 0.224508+0.439659im; 0.224508-0.439659im 0.579347-2.77556e-17im]
+    @testset "1 qubit, function schedule (AS_DW_QUADRATIC), default anneal time" begin
+        ρ_target = [0.0162536+0.0im 0.121897-0.0336245im; 0.121897+0.0336245im  0.983746+2.77556e-17im]
         ρ = simulate(single_spin_model, 1.0, AS_DW_QUADRATIC, 100)
 
         # NOTE, atol required due to too few digits in target
@@ -213,7 +213,7 @@ end
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
 
-        annealing_time = 100.0
+        annealing_time = 10.0
         steps = 1000
 
         ρ = simulate(ising_model, annealing_time, AS_DW_QUADRATIC, steps)
@@ -273,7 +273,7 @@ end
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
 
-        annealing_time = 100.0
+        annealing_time = 10.0
         steps = 1000
 
         ρ_list = []
@@ -297,7 +297,7 @@ end
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
 
-        annealing_time = 100.0
+        annealing_time = 10.0
 
         ρ_list = []
         ρ = simulate(ising_model, annealing_time, AS_DW_QUADRATIC, silence=true, state_steps=ρ_list)
