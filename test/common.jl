@@ -33,6 +33,14 @@ function single_spin_ρ(s; T=1.0)
     return (I + ψs[1]*X + ψs[2]*Y + ψs[3]*Z)/2.0
 end
 
+
+single_spin_model = Dict((1,) => 1)
+single_spin_analytic_ρ = single_spin_ρ(1.0)
+single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
+
+s_100 = range(0, 1, length=100)
+s_10000 = range(0, 1, length=10000)
+
 AS_CIRCULAR_pwc_csv_100 = parse_dwave_annealing_schedule("data/trig_sched_100.csv", interpolation=:none, initial_state=default_initial_state)
 AS_CIRCULAR_pwc_csv_1000 = parse_dwave_annealing_schedule("data/trig_sched_1000.csv", interpolation=:none, initial_state=default_initial_state)
 

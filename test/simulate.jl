@@ -1,9 +1,4 @@
 
-single_spin_model = Dict((1,) => 1)
-single_spin_analytic_ρ = single_spin_ρ(1.0)
-single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
-
-
 @testset "simulate, single-qubit" begin
 
     @testset "1 qubit, function schedule, default anneal time, analytical solution" begin
