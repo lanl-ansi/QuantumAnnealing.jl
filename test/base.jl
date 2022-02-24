@@ -134,17 +134,32 @@ end
         @test all(isapprox(single_spin_H(s), transverse_ising_hamiltonian(single_spin_model, AS_CIRCULAR, s)) for s in s_100)
     end
 
+    @testset "two spin, analytical solution" begin
+        @test all(isapprox(two_spin_H(s), transverse_ising_hamiltonian(two_spin_model, AS_CIRCULAR, s)) for s in s_100)
+    end
+
     @testset "single spin, linear schedule" begin
-        ising_model = Dict((1,) => 1)
         annealing_schedule = AS_LINEAR
 
-        H_00 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 0.0)
-        H_05 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 0.5)
-        H_10 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 1.0)
+        H_00 = transverse_ising_hamiltonian(single_spin_model, annealing_schedule, 0.0)
+        H_05 = transverse_ising_hamiltonian(single_spin_model, annealing_schedule, 0.5)
+        H_10 = transverse_ising_hamiltonian(single_spin_model, annealing_schedule, 1.0)
 
         @test isapprox(H_00, [0 1; 1 0])
         @test isapprox(H_05, [0.5 0.5; 0.5 -0.5])
         @test isapprox(H_10, [1 0; 0 -1])
+    end
+
+    @testset "two spin, linear schedule" begin
+        annealing_schedule = AS_LINEAR
+
+        H_00 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 0.0)
+        H_05 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 0.5)
+        H_10 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 1.0)
+
+        @test isapprox(H_00, [0.0 1.0 1.0 0.0; 1.0  0.0 0.0 1.0; 1.0 0.0  0.0 1.0; 0.0 1.0 1.0 0.0])
+        @test isapprox(H_05, [1.0 0.5 0.5 0.0; 0.5 -1.0 0.0 0.5; 0.5 0.0 -1.0 0.5; 0.0 0.5 0.5 1.0])
+        @test isapprox(H_10, [2.0 0.0 0.0 0.0; 0.0 -2.0 0.0 0.0; 0.0 0.0 -2.0 0.0; 0.0 0.0 0.0 2.0])
     end
 
 end
