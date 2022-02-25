@@ -6,13 +6,17 @@ Y = [0 -im; im 0]
 Z = [1 0; 0 -1]
 
 
-single_spin_model = Dict((1,) => 1)
 
-function single_spin_H(s)
+### An analytical solution to the following 1 qubit model
+### using the AS_CIRCULAR annealing schedule
+
+one_spin_model = Dict((1,) => 1)
+
+function one_spin_H(s)
     return cos(s*π/2)*X + sin(s*π/2)*Z
 end
 
-function single_spin_ρ(T; s=1.0)
+function one_spin_ρ(T; s=1.0)
     r = 2.0 * T
     ω0 = π/2
     ω1 = sqrt(4.0 * T^2 + π^2/4.0)
@@ -26,6 +30,10 @@ function single_spin_ρ(T; s=1.0)
     return (I + ψs[1]*X + ψs[2]*Y + ψs[3]*Z)/2.0
 end
 
+
+
+### An analytical solution to the following 2 qubit model
+### using the AS_CIRCULAR annealing schedule
 
 two_spin_model = Dict((1,2) => 2)
 
