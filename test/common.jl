@@ -38,12 +38,12 @@ end
 two_spin_model = Dict((1,2) => 2)
 
 function two_spin_H(s)
-    X = Complex{Float64}[0.0 1.0 1.0 0.0; 1.0 0.0 0.0 1.0; 1.0 0.0 0.0 1.0; 0.0 1.0 1.0 0.0]
+    X = Complex{Float64}[0.0 1.0 1.0 0.0; 1.0  0.0 0.0 1.0; 1.0 0.0  0.0 1.0; 0.0 1.0 1.0 0.0]
     Z = Complex{Float64}[2.0 0.0 0.0 0.0; 0.0 -2.0 0.0 0.0; 0.0 0.0 -2.0 0.0; 0.0 0.0 0.0 2.0]
     return cos(s*π/2)*X + sin(s*π/2)*Z
 end
 
-function two_spin_porbs(t)
+function two_spin_probs(t)
     t = 2*t/π
     p1 = sin(1/4*π*sqrt(1 + 16*t^2))^2/(2 + 32*t^2)
     p2 = (1 + 32*t^2 + cos(1/2*π*sqrt(1 + 16*t^2)))/(4 + 64*t^2)
@@ -51,19 +51,11 @@ function two_spin_porbs(t)
 end
 
 function two_spin_ρ(s; t=1.0)
-    t = 2*t/π
-
-    s0 = (
-        cosh(π/4*s*sqrt(-1-16*t^2 + 0im)) * sqrt((1+16*t^2)*(-1+sin((π*s)/2)) + 0im) +
-        (4im * t * sqrt(1-sin((π*s)/2)) + sqrt(1+sin((π*s)/2)))*sinh(π/4*s*sqrt(-1-16*t^2 + 0im))
-    )/(2*sqrt(-1-16*t^2 + 0im))
-    s1 = exp(-π/4*s*sqrt(-1-16*t^2 + 0im))*(
-        (-1+exp(π/2*s*sqrt(-1-16*t^2 + 0im)))*sqrt(1+sin((π*s)/2))*(sec((π*s)/2)-tan((π*s)/2)) -
-        (
-            4im * (-1+exp(π/2*s*sqrt(-1-16*t^2 + 0im))) * t +
-            (1+exp(π/2*s*sqrt(-1-16*t^2 + 0im)))*sqrt(-1-16*t^2 + 0im)
-        )*sqrt(1-sin((π*s)/2))*(sec((π*s)/2)+tan((π*s)/2))
-    )/(4*sqrt(-1-16*t^2 + 0im))
+    s0 = 1/2*cos(π/4*s*sqrt(1+64*t^2/π^2))*sqrt(1-sin(π/2*s)) +
+        (8im*t*sqrt(1-sin(π/2*s)) + sqrt(1+sin(π/2*s)))*sin(π/4*s*sqrt(1+64*t^2/π^2))/(2*sqrt(1+64*t^2/π^2))
+    s1 = -(cos(π/4*s*sqrt(1+64*t^2/π^2))*(1+sin(π/2*s)) + 
+        ((-cos(π/2*s) + 8im*t*(1+sin(π/2*s))/π)*(sin(π/4*s*sqrt(1+64*t^2/π^2))))/(sqrt(1+64*t^2/π^2))
+        )/(2*sqrt(1+sin(π/2*s)))
     s2 = s1
     s3 = s0
 
@@ -75,7 +67,7 @@ end
 single_spin_model = Dict((1,) => 1)
 single_spin_analytic_ρ = single_spin_ρ(1.0)
 
-two_spin_analytic_ρ = two_spin_ρ(1.0-1e-6)
+two_spin_analytic_ρ = two_spin_ρ(1.0)
 
 
 s_100 = range(0, 1, length=100)

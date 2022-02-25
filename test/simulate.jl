@@ -166,23 +166,17 @@ end
 
     @testset "2 qubit, function schedule, default anneal time, analytical solution" begin
         ρ = simulate(two_spin_model, 1.0, AS_CIRCULAR, 100)
-
-        @test isapprox(two_spin_analytic_ρ, ρ, atol=1e-4)
-        @test !isapprox(two_spin_analytic_ρ, ρ, atol=1e-5)
+        @test isapprox(two_spin_analytic_ρ, ρ)
     end
 
     @testset "2 qubit, function schedule, fast anneal time, analytical solution" begin
         ρ = simulate(two_spin_model, 0.5, AS_CIRCULAR, 100)
-
-        @test isapprox(two_spin_ρ(1.0-1e-6, t=0.5), ρ, atol=1e-4)
-        @test !isapprox(two_spin_ρ(1.0-1e-6, t=0.5), ρ, atol=1e-5)
+        @test isapprox(two_spin_ρ(1.0, t=0.5), ρ)
     end
 
     @testset "2 qubit, function schedule, slow anneal time, analytical solution" begin
         ρ = simulate(two_spin_model, 2.0, AS_CIRCULAR, 100)
-
-        @test isapprox(two_spin_ρ(1.0-1e-6, t=2.0), ρ, atol=1e-4)
-        @test !isapprox(two_spin_ρ(1.0-1e-6, t=2.0), ρ, atol=1e-5)
+        @test isapprox(two_spin_ρ(1.0, t=2.0), ρ)
     end
 
 end
