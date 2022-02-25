@@ -423,6 +423,12 @@ end
         @test isapprox(single_spin_analytic_ρ, ρ)
     end
 
+    @testset "2 qubit, function schedule, analytical solution" begin
+        ρ = simulate_de(two_spin_model, 1.0, AS_CIRCULAR, 1e-6)
+
+        @test isapprox(two_spin_analytic_ρ, ρ)
+    end
+
     @testset "1 qubit, function schedule, constant terms" begin
         ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x=[1], constant_field_z=[1])
         ρ_de = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
