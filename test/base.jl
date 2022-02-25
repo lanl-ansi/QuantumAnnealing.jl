@@ -69,20 +69,21 @@
 
 end
 
+
 @testset "ising energy computations" begin
 
-    @testset "single qubit, single state" begin
+    @testset "1 qubit, single state" begin
         @test isapprox(eval_ising_state_energy([1],Dict((1,) => 1)), 1)
         @test isapprox(eval_ising_state_energy([-1],Dict((1,) => 1)), -1)
     end
 
-    @testset "single qubit, all states" begin
+    @testset "1 qubit, all states" begin
         energies = compute_ising_state_energies(Dict((1,) => 1))
         @test isapprox(energies[0], 1)
         @test isapprox(energies[1], -1)
     end
 
-    @testset "two qubit, single state" begin
+    @testset "2 qubit, single state" begin
         ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
         @test isapprox(eval_ising_state_energy([1, 1], ising_model), 1)
         @test isapprox(eval_ising_state_energy([1, -1], ising_model), 1)
@@ -90,7 +91,7 @@ end
         @test isapprox(eval_ising_state_energy([-1, -1], ising_model), -3)
     end
 
-    @testset "two qubit, all state energies" begin
+    @testset "2 qubit, all state energies" begin
         energies = compute_ising_state_energies(Dict((1,) => 1, (1,2) => -1))
         @test isapprox(energies[0], 0)
         @test isapprox(energies[1], 0)
@@ -98,7 +99,7 @@ end
         @test isapprox(energies[3], -2)
     end
 
-    @testset "two qubit, energy levels" begin
+    @testset "2 qubit, energy levels" begin
         energy_levels = compute_ising_energy_levels(Dict((1,2) => -1))
         @test energy_levels[1].energy == -1.0
         @test energy_levels[1].states == Set([0,3])
@@ -106,41 +107,64 @@ end
         @test energy_levels[2].states == Set([1,2])
     end
 
-    @testset "two qubit, print energy levels" begin
+    @testset "2 qubit, print energy levels" begin
         mktemp() do path,io
             out = stdout
             err = stderr
             redirect_stdout(io)
             redirect_stderr(io)
 
-            print_ising_energy_levels(Dict((1,2) => -1))
-            print_ising_energy_levels(Dict((1,2) => -1), limit=0)
-            print_ising_energy_levels(Dict((1,2) => -1), limit=1)
-            print_ising_energy_levels(Dict((1,2) => -1), limit=10)
-
+            print_ising_energy_levels(two_spin_model)
+            print_ising_energy_levels(two_spin_model, limit=0)
+            print_ising_energy_levels(two_spin_model, limit=1)
+            print_ising_energy_levels(two_spin_model, limit=10)
             flush(io)
             redirect_stdout(out)
             redirect_stderr(err)
         end
     end
 
-    @testset "transverse ising hamiltonian building" begin
-        ising_model = Dict((1,) => 1)
-        annealing_schedule = AS_CIRCULAR
-
-        H_00 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 0.0)
-        H_05 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 0.5)
-        H_10 = transverse_ising_hamiltonian(ising_model, annealing_schedule, 1.0)
-
-        @test isapprox(H_00, [0 1; 1 0])
-        @test isapprox(H_05, [1/sqrt(2) 1/sqrt(2); 1/sqrt(2) -1/sqrt(2)])
-        @test isapprox(H_10, [1 0; 0 -1])
-    end
 end
 
+
+@testset "transverse ising hamiltonian" begin
+
+    @testset "1 qubit, analytical solution" begin
+        @test all(isapprox(one_spin_H(s), transverse_ising_hamiltonian(one_spin_model, AS_CIRCULAR, s)) for s in s_100)
+    end
+
+    @testset "2 qubit, analytical solution" begin
+        @test all(isapprox(two_spin_H(s), transverse_ising_hamiltonian(two_spin_model, AS_CIRCULAR, s)) for s in s_100)
+    end
+
+    @testset "1 qubit, linear schedule" begin
+        annealing_schedule = AS_LINEAR
+
+        H_00 = transverse_ising_hamiltonian(one_spin_model, annealing_schedule, 0.0)
+        H_05 = transverse_ising_hamiltonian(one_spin_model, annealing_schedule, 0.5)
+        H_10 = transverse_ising_hamiltonian(one_spin_model, annealing_schedule, 1.0)
+
+        @test isapprox(H_00, [0 1; 1 0])
+        @test isapprox(H_05, [0.5 0.5; 0.5 -0.5])
+        @test isapprox(H_10, [1 0; 0 -1])
+    end
+
+    @testset "2 qubit, linear schedule" begin
+        annealing_schedule = AS_LINEAR
+
+        H_00 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 0.0)
+        H_05 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 0.5)
+        H_10 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 1.0)
+
+        @test isapprox(H_00, [0.0 1.0 1.0 0.0; 1.0  0.0 0.0 1.0; 1.0 0.0  0.0 1.0; 0.0 1.0 1.0 0.0])
+        @test isapprox(H_05, [1.0 0.5 0.5 0.0; 0.5 -1.0 0.0 0.5; 0.5 0.0 -1.0 0.5; 0.0 0.5 0.5 1.0])
+        @test isapprox(H_10, [2.0 0.0 0.0 0.0; 0.0 -2.0 0.0 0.0; 0.0 0.0 -2.0 0.0; 0.0 0.0 0.0 2.0])
+    end
+
+end
+
+
 @testset "csv annealing schedules" begin
-    s_100 = range(0, 1, length=100)
-    s_10000 = range(0, 1, length=10000)
 
     @testset "piecewise constant" begin
         deltas = [AS_CIRCULAR.A(s) - AS_CIRCULAR_pwc_csv_100.A(s) for s in s_100]

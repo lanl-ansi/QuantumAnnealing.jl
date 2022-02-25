@@ -1,42 +1,27 @@
 
-single_spin_model = Dict((1,) => 1)
-single_spin_analytic_ρ = single_spin_ρ(1.0)
-single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
+@testset "simulate, 1 qubit" begin
 
-
-@testset "simulate, single-qubit" begin
-
-    @testset "1 qubit, function schedule, default anneal time, analytical solution" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100)
-
-        @test isapprox(single_spin_analytic_ρ, ρ)
+    @testset "function schedule, default anneal time, analytical solution" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100)
+        @test isapprox(one_spin_ρ(1.0), ρ)
     end
 
-    @testset "1 qubit, analytical solution, adaptive steps" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-7, max_tol=1e-7, silence=true)
-
-        @test isapprox(single_spin_analytic_ρ, ρ)
+    @testset "analytical solution, adaptive steps" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-7, max_tol=1e-7, silence=true)
+        @test isapprox(one_spin_ρ(1.0), ρ)
     end
 
-    @testset "1 qubit, function schedule, fast anneal time, analytical solution" begin
-        annealing_time = 0.5
-        ρ_target = single_spin_ρ(1.0, T=annealing_time)
-
-        ρ = simulate(single_spin_model, annealing_time, AS_CIRCULAR, 1000)
-
-        @test isapprox(ρ_target, ρ)
+    @testset "function schedule, fast anneal time, analytical solution" begin
+        ρ = simulate(one_spin_model, 0.5, AS_CIRCULAR, 1000)
+        @test isapprox(one_spin_ρ(0.5), ρ)
     end
 
-    @testset "1 qubit, function schedule, slow anneal time, analytical solution" begin
-        annealing_time = 2.0
-        ρ_target = single_spin_ρ(1.0, T=annealing_time)
-
-        ρ = simulate(single_spin_model, annealing_time, AS_CIRCULAR, 1000)
-
-        @test isapprox(ρ_target, ρ)
+    @testset "function schedule, slow anneal time, analytical solution" begin
+        ρ = simulate(one_spin_model, 2.0, AS_CIRCULAR, 1000)
+        @test isapprox(one_spin_ρ(2.0), ρ)
     end
 
-    @testset "1 qubit, fractional field value" begin
+    @testset "fractional field value" begin
         ρ_target = [0.420186+0.0im -0.409634+0.275372im; -0.409634-0.275372im 0.579814+2.77556e-17im]
         ρ = simulate(Dict((1,) => 0.5), 1.0, AS_CIRCULAR, 100)
 
@@ -44,7 +29,7 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, field value above 1.0" begin
+    @testset "field value above 1.0" begin
         ρ_target = [0.291065-2.77556e-17im 0.114524+0.43958im; 0.114524-0.43958im 0.708935+5.55112e-17im]
         ρ = simulate(Dict((1,) => 1.5), 1.0, AS_CIRCULAR, 100)
 
@@ -52,83 +37,83 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, function schedule, constant terms" begin
+    @testset "function schedule, constant terms" begin
         ρ_target = [0.0578906+1.38778e-17im -0.165069-0.165202im; -0.165069+0.165202im 0.942109+0.0im]
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x = [1], constant_field_z = [1])
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x = [1], constant_field_z = [1])
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, function schedule, different initial state" begin
+    @testset "function schedule, different initial state" begin
         ρ_target = [0.326006+0.0im -0.413095-0.221536im; -0.413095+0.221536im 0.673994+0.0im]
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, initial_state = [0,1])
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, initial_state = [0,1])
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, function schedule (AS_LINEAR), default anneal time" begin
+    @testset "function schedule (AS_LINEAR), default anneal time" begin
         ρ_target = [0.422382+2.77556e-17im -0.278818+0.40772im; -0.278818-0.40772im 0.577618+2.77556e-17im]
-        ρ = simulate(single_spin_model, 1.0, AS_LINEAR, 100)
+        ρ = simulate(one_spin_model, 1.0, AS_LINEAR, 100)
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, function schedule (AS_QUADRATIC), default anneal time" begin
+    @testset "function schedule (AS_QUADRATIC), default anneal time" begin
         ρ_target = [0.489037+0.0im -0.393381+0.308433im; -0.393381-0.308433im 0.510963+5.55112e-17im]
-        ρ = simulate(single_spin_model, 1.0, AS_QUADRATIC, 100)
+        ρ = simulate(one_spin_model, 1.0, AS_QUADRATIC, 100)
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, function schedule (AS_DW_QUADRATIC), default anneal time" begin
+    @testset "function schedule (AS_DW_QUADRATIC), default anneal time" begin
         ρ_target = [0.0162536+0.0im 0.121897-0.0336245im; 0.121897+0.0336245im  0.983746+2.77556e-17im]
-        ρ = simulate(single_spin_model, 1.0, AS_DW_QUADRATIC, 100)
+        ρ = simulate(one_spin_model, 1.0, AS_DW_QUADRATIC, 100)
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
 
-    @testset "1 qubit, function schedule, too few steps, analytical solution" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 10)
+    @testset "function schedule, too few steps, analytical solution" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 10)
 
         # NOTE, atol required due to too few iterations
-        @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-5)
-        @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-6)
+        @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-5)
+        @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-6)
     end
 
-    @testset "1 qubit, csv schedule pwq, analytical solution" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR_pwq_csv_1000, 100)
+    @testset "csv schedule pwq, analytical solution" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR_pwq_csv_1000, 100)
 
-        @test isapprox(single_spin_analytic_ρ, ρ)
+        @test isapprox(one_spin_ρ(1.0), ρ)
     end
 
-    @testset "1 qubit, csv schedule pwq, low resolution, analytical solution" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR_pwq_csv_100, 100)
+    @testset "csv schedule pwq, low resolution, analytical solution" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR_pwq_csv_100, 100)
 
         # NOTE, atol required due to pwq approximation in the schedule file
-        @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-6)
-        @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-7)
+        @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-6)
+        @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-7)
     end
 
-    @testset "1 qubit, csv schedule pwl, low resolution, analytical solution" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR_pwl_csv_100, 100)
+    @testset "csv schedule pwl, low resolution, analytical solution" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR_pwl_csv_100, 100)
 
         # NOTE, atol required due to pwl approximation in the schedule file
-        @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-4)
-        @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-5)
+        @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-4)
+        @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-5)
     end
 
-    @testset "1 qubit, csv schedule pwc, low resolution, analytical solution" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR_pwc_csv_100, 100)
+    @testset "csv schedule pwc, low resolution, analytical solution" begin
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR_pwc_csv_100, 100)
 
         # NOTE, atol required due to pwc approximation in the schedule file
-        @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-2)
-        @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-3)
+        @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-2)
+        @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-3)
     end
 
     @testset "reverse annealing test" begin
@@ -143,25 +128,45 @@ single_spin_analytic_prob = real(tr(single_spin_analytic_ρ * [0 0; 0 1]))
         @test isapprox(ρ_target, ρ, atol=1e-6)
     end
 
-    @testset "1 qubit probability trajectory, nonadaptive" begin
+    @testset "collect probability trajectory, nonadaptive" begin
         ρ_list = []
         steps=100
-        ρ = simulate(single_spin_model, 1, AS_CIRCULAR, steps, state_steps=ρ_list)
+        ρ = simulate(one_spin_model, 1, AS_CIRCULAR, steps, state_steps=ρ_list)
 
-        @test isapprox(single_spin_analytic_ρ, ρ)
+        @test isapprox(one_spin_ρ(1.0), ρ)
         @test length(ρ_list) == steps
         @test isapprox(ρ_list[1], (default_initial_state(1) * default_initial_state(1)'))
-        @test isapprox(ρ_list[steps], single_spin_analytic_ρ)
+        @test isapprox(ρ_list[steps], one_spin_ρ(1.0))
     end
 
-    @testset "1 qubit probability trajectory, adaptive" begin
+    @testset "collect probability trajectory, adaptive" begin
         ρ_list = []
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-7, max_tol=1e-7, silence=true, state_steps=ρ_list)
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-7, max_tol=1e-7, silence=true, state_steps=ρ_list)
 
-        @test isapprox(single_spin_analytic_ρ, ρ)
+        @test isapprox(one_spin_ρ(1.0), ρ)
         @test length(ρ_list) == 64
         @test isapprox(ρ_list[1], (default_initial_state(1) * default_initial_state(1)'))
-        @test isapprox(ρ_list[64], single_spin_analytic_ρ)
+        @test isapprox(ρ_list[64], one_spin_ρ(1.0))
+    end
+
+end
+
+
+@testset "simulate, 2 qubit" begin
+
+    @testset "function schedule, default anneal time, analytical solution" begin
+        ρ = simulate(two_spin_model, 1.0, AS_CIRCULAR, 100)
+        @test isapprox(two_spin_ρ(1.0), ρ)
+    end
+
+    @testset "function schedule, fast anneal time, analytical solution" begin
+        ρ = simulate(two_spin_model, 0.5, AS_CIRCULAR, 100)
+        @test isapprox(two_spin_ρ(0.5), ρ)
+    end
+
+    @testset "function schedule, slow anneal time, analytical solution" begin
+        ρ = simulate(two_spin_model, 2.0, AS_CIRCULAR, 100)
+        @test isapprox(two_spin_ρ(2.0), ρ)
     end
 
 end
@@ -379,15 +384,14 @@ end
 end
 
 
-
-@testset "two qubit, print z state probabilities" begin
+@testset "2 qubit, print z state probabilities" begin
     mktemp() do path,io
         out = stdout
         err = stderr
         redirect_stdout(io)
         redirect_stderr(io)
 
-        ρ = simulate(Dict((1,2) => -1), 1.0, AS_CIRCULAR, 100)
+        ρ = simulate(two_spin_model, 1.0, AS_CIRCULAR, 100)
         print_z_state_probabilities(ρ)
         print_z_state_probabilities(ρ, sort=true)
         print_z_state_probabilities(ρ, sort=true, limit=2)
@@ -399,28 +403,31 @@ end
 end
 
 
-
 @testset "simulate_de" begin
 
     @testset "1 qubit, function schedule, analytical solution" begin
-        ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, 1e-6)
+        ρ = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6)
+        @test isapprox(one_spin_ρ(1.0), ρ)
+    end
 
-        @test isapprox(single_spin_analytic_ρ, ρ)
+    @testset "2 qubit, function schedule, analytical solution" begin
+        ρ = simulate_de(two_spin_model, 1.0, AS_CIRCULAR, 1e-6)
+        @test isapprox(two_spin_ρ(1.0), ρ)
     end
 
     @testset "1 qubit, function schedule, constant terms" begin
-        ρ = simulate(single_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x=[1], constant_field_z=[1])
-        ρ_de = simulate_de(single_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x=[1], constant_field_z=[1])
+        ρ_de = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
 
         @test isapprox(ρ, ρ_de, atol=1e-8)
         @test !isapprox(ρ, ρ_de, atol=1e-9)
     end
 
     @testset "1 qubit, csv schedule, analytical solution" begin
-        ρ = simulate_de(single_spin_model, 1.0, AS_CIRCULAR_pwl_csv_1000, 1e-6)
+        ρ = simulate_de(one_spin_model, 1.0, AS_CIRCULAR_pwl_csv_1000, 1e-6)
 
-        @test isapprox(single_spin_analytic_ρ, ρ, atol=1e-6)
-        @test !isapprox(single_spin_analytic_ρ, ρ, atol=1e-7)
+        @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-6)
+        @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-7)
     end
 
     @testset "2 qubit, function schedule" begin
