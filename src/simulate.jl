@@ -140,21 +140,7 @@ end
 
 
 """
-Main function for performing quantum annealing simulation via a Magnus Expansion.
-Noise can be simulated by running multiple times with randomized constant fields.
-
-Arguments:
-ising_model - ising model represented as a dictionary.  The qubits
-              and couplings are represented as tuples, and the weights
-              are numbers.
-              For Example: im = Dict((1,) => 1, (2,) => 0.5, (1,2) => 2)
-annealing_schedule - The annealing schedule, of the form given by the struct
-steps - number of iterations for the Magnus Expansion
-
-Parameters:
-initial_state - Initial state vector. Defaults to uniform superposition state on n qubits
-constant_field_x - vector of constant biases in the X basis on each qubit. Default is zeros(n)
-constant_field_z - vector of constant biases in the Z basis on each qubit. Default is zeros(n)
+a first order magnus expanion solver with a fixed number of steps
 """
 function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
@@ -237,6 +223,9 @@ function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule
 end
 
 
+"""
+a second order magnus expanion solver with a fixed number of steps
+"""
 function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
@@ -322,9 +311,22 @@ function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule
 end
 
 
+
 """
-A simplified interface to the core `simulate` routine that determines a
-suitable number of steps to ensure a high accuracy simulation.
+Main function for performing quantum annealing simulation via a Magnus Expansion (second order).
+Noise can be simulated by running multiple times with randomized constant fields.
+
+Arguments:
+ising_model - ising model represented as a dictionary.  The qubits
+              and couplings are represented as tuples, and the weights
+              are numbers.
+              For Example: im = Dict((1,) => 1, (2,) => 0.5, (1,2) => 2)
+annealing_schedule - The annealing schedule, of the form given by the struct
+
+Parameters:
+initial_state - Initial state vector. Defaults to uniform superposition state on n qubits
+constant_field_x - vector of constant biases in the X basis on each qubit. Default is zeros(n)
+constant_field_z - vector of constant biases in the Z basis on each qubit. Default is zeros(n)
 The parameters `mean_tol` and `max_tol` specify the desired simulation accuracy.
 The `silence` parameter can be used to suppress the progress log.
 """
@@ -381,11 +383,6 @@ end
 
 
 
-
-# multiplication of polynomiuals
-# integration of polynomiuals
-# commuator of hamilatoan
-# hamiltonian DS
 
 function _poly_product(p1::Vector{<:Real}, p2::Vector{<:Real})
     p_prod = Dict{Int,Float64}()
@@ -530,6 +527,9 @@ two_spin_model = Dict((1,2) => 2)
 ρ = QuantumAnnealing.simulate_tmp(two_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-4, max_tol=1e-2)
 =#
 
+"""
+an any-order magnus expanion solver with a fixed number of time steps
+"""
 function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
@@ -620,6 +620,9 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
 end
 
 
+"""
+a convergence tolerance-based any-order magnus expanion solver
+"""
 function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
     mean_delta = mean_tol + 1.0

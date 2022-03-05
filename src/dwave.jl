@@ -196,7 +196,7 @@ function simulate_bqpjson(infile, outfile, annealing_time, annealing_schedule, s
         ising_model[k] = v*scale
     end
 
-    ρ = simulate(ising_model, annealing_time, annealing_schedule, steps)
+    ρ = simulate_o2(ising_model, annealing_time, annealing_schedule, steps)
 
     write_dwisc(outfile, ρ, ising_model, qubit_ids, simulated_num_reads=simulated_num_reads, annealing_time=annealing_time)
 end
@@ -233,7 +233,7 @@ function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_sched
         x_field = x_bias[shot]
         z_field = z_bias[shot]
 
-        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps, constant_field_x=[x_field], constant_field_z=[z_field])
+        ρ = simulate_o2(ising_model, annealing_time, annealing_schedule, steps, constant_field_x=[x_field], constant_field_z=[z_field])
 
         accumulator = accumulator + ρ
     end
