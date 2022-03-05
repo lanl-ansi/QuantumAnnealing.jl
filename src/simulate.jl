@@ -215,6 +215,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
 
         integA = integral_1_sched(a_2, a_1, a_0, s0, δs)
         integB = integral_1_sched(b_2, b_1, b_0, s0, δs)
+        #println(integA, " ", integB)
         integ2 = integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δs)
 
         integ2A = a_1*δs^3/6 + a_2*s0*δs^3/3 + a_2*δs^4/6
@@ -224,11 +225,13 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         Ω1Const = δs * constant_component
         Ω1 = Ω1Sched + Ω1Const
 
-        Ω2Sched = integ2 * xz_bracket 
-        Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
-        Ω2 = (Ω2Sched + Ω2Const)/2
+        #Ω2Sched = integ2 * xz_bracket 
+        #Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
+        #Ω2 = (Ω2Sched + Ω2Const)/2
 
-        U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
+        #println(Matrix(-im .* annealing_time.*Ω1))
+        #U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
+        U_next = exp(Matrix(-im * (annealing_time*Ω1)))
         U = U_next * U
 
         if track_states
@@ -332,7 +335,7 @@ function _poly_integrate(p::Vector{<:Real})
     ip = [0.0 for i in 1:length(p)+1]
 
     for (i,c) in enumerate(p)
-        ip[i+1] = c/(i+1)
+        ip[i+1] = c/(i)
     end
 
     return ip
@@ -456,13 +459,32 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
         b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
 
+        a_2_shift = a_2
+        a_1_shift = a_1 + 2*a_2*s0
+        a_0_shift = a_0 + a_1*s0 + a_2*s0^2
+
+        b_2_shift = b_2
+        b_1_shift = b_1 + 2*b_2*s0
+        b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+
+        # println(a_2, " ", a_1, " ", a_0)
+        # println(a_2_shift, " ", a_1_shift, " ", a_0_shift)
+        # println()
+        
+        a_int_eval = _poly_eval(δs, _poly_integrate([a_0_shift,a_1_shift,a_2_shift]))
+        b_int_eval = _poly_eval(δs, _poly_integrate([b_0_shift,b_1_shift,b_2_shift]))
+        
+
+        #println(a_int_eval, " ", b_int_eval)
+
         H = [
-            (poly=[a_0,a_1,a_2], matrix=-im .* x_component),
-            (poly=[b_0,b_1,b_2], matrix=-im .* z_component)
+            (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=Matrix(-im*annealing_time .* x_component)),
+            (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
         ]
 
-        Ω1 = _magnus_generator(H, 1)[1]
-        Ω1 = _hamiltonian_eval(δs, Ω1)
+        Ω_list = _magnus_generator(H, 1)
+        #display(Ω_list[1])
+        Ω1 = _hamiltonian_eval(δs, Ω_list[1])
 
         #println(Ω1)
 
@@ -482,6 +504,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         # Ω2 = (Ω2Sched + Ω2Const)/2
 
         #U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
+        #println(Matrix(Ω1))
         U_next = exp(Matrix(Ω1))
         U = U_next * U
 
