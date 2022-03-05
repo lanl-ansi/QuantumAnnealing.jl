@@ -156,7 +156,7 @@ initial_state - Initial state vector. Defaults to uniform superposition state on
 constant_field_x - vector of constant biases in the X basis on each qubit. Default is zeros(n)
 constant_field_z - vector of constant biases in the Z basis on each qubit. Default is zeros(n)
 """
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
     end
@@ -215,7 +215,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
 
         integA = integral_1_sched(a_2, a_1, a_0, s0, δs)
         integB = integral_1_sched(b_2, b_1, b_0, s0, δs)
-        #println(integA, " ", integB)
         integ2 = integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δs)
 
         integ2A = a_1*δs^3/6 + a_2*s0*δs^3/3 + a_2*δs^4/6
@@ -225,12 +224,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         Ω1Const = δs * constant_component
         Ω1 = Ω1Sched + Ω1Const
 
-        #Ω2Sched = integ2 * xz_bracket 
-        #Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
-        #Ω2 = (Ω2Sched + Ω2Const)/2
-
-        #println(Matrix(-im .* annealing_time.*Ω1))
-        #U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
         U_next = exp(Matrix(-im * (annealing_time*Ω1)))
         U = U_next * U
 
@@ -243,6 +236,90 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
     return U * R0 * U'
 end
 
+
+function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+    if steps < 2
+        error("at least two steps are required by simulate, given $(steps)")
+    end
+
+    n = _check_ising_model_ids(ising_model)
+
+    if initial_state == nothing
+        initial_state = annealing_schedule.init_default(n)
+    end
+
+    if constant_field_x == nothing
+        constant_field_x = zeros(n)
+    end
+
+    if constant_field_z == nothing
+        constant_field_z = zeros(n)
+    end
+
+    track_states = !(state_steps == nothing)
+
+    t0 = 0
+    s0 = 0
+
+    R0 = initial_state * initial_state'
+
+    ηs = ones(n)
+    hs = zeros(n)
+
+    x_component = sum_x(n)
+    z_component = SparseArrays.spzeros(2^n, 2^n)
+    for (tup,w) in ising_model
+        z_component = z_component + sum_z_tup(n, tup, w)
+    end
+
+    xz_bracket = lie_bracket(x_component, z_component)
+
+    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
+    constant_bracket_x = lie_bracket(x_component, constant_component)
+    constant_bracket_z = lie_bracket(z_component, constant_component)
+
+    s_steps = range(0, 1, length=steps)
+    R_current = R0
+    U = foldl(kron, [IMAT for i = 1:n])
+
+    if track_states
+        push!(state_steps, R_current)
+    end
+
+    for i in 1:(steps-1)
+        s0 = s_steps[i]
+        s1 = s_steps[i+1]
+        δs = s1 - s0
+
+        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
+        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
+
+        integA = integral_1_sched(a_2, a_1, a_0, s0, δs)
+        integB = integral_1_sched(b_2, b_1, b_0, s0, δs)
+        integ2 = integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δs)
+
+        integ2A = a_1*δs^3/6 + a_2*s0*δs^3/3 + a_2*δs^4/6
+        integ2B = b_1*δs^3/6 + b_2*s0*δs^3/3 + b_2*δs^4/6
+
+        Ω1Sched = integA * x_component + integB * z_component
+        Ω1Const = δs * constant_component
+        Ω1 = Ω1Sched + Ω1Const
+
+        Ω2Sched = integ2 * xz_bracket 
+        Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
+        Ω2 = (Ω2Sched + Ω2Const)/2
+
+        U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
+        U = U_next * U
+
+        if track_states
+            R_current = U * R0 * U'
+            push!(state_steps, R_current)
+        end
+    end
+
+    return U * R0 * U'
+end
 
 
 """
@@ -261,7 +338,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
     end
 
-    ρ_prev = simulate(ising_model, annealing_time, annealing_schedule, steps; kwargs...)
+    ρ_prev = simulate_o2(ising_model, annealing_time, annealing_schedule, steps; kwargs...)
 
     iteration = 1
     while mean_delta >= mean_tol || max_delta >= max_tol
@@ -271,7 +348,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
             empty!(state_steps)
         end
 
-        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps; state_steps=state_steps, kwargs...)
+        ρ = simulate_o2(ising_model, annealing_time, annealing_schedule, steps; state_steps=state_steps, kwargs...)
 
         ρ_delta = abs.(ρ .- ρ_prev)
         mean_delta = sum(ρ_delta)/length(ρ_delta)
@@ -412,19 +489,25 @@ function _bernoulli_num_fact(n)
 end
 
 # https://en.wikipedia.org/wiki/Magnus_expansion
-# H that is a poly for X and Z
-function _magnus_generator(A::Vector, order::Int)
-    # TODO order >= 1
-    Ω_list = [_hamiltonian_integrate(A)]
+# Initial H is a polynomal of X and Z
+function _magnus_generator(H::Vector, order::Int)
+    @assert(order >= 1)
+    Ω_list = [_hamiltonian_integrate(H)]
 
     S_list = Dict()
 
-    for i in 2:order
-        S_list[(1,i)] = _hamiltonian_commutator(Ω_list[i-1], A)
-        for j in 2:i-1
-            S_list[(j,i)] = _hamiltonian_sum(_hamiltonian_commutator(Ω_list[m], S_list[(j-1,i-m)]) for m in 1:i-j)
+    for n in 2:order
+        S_list[(1,n)] = _hamiltonian_commutator(Ω_list[n-1], H)
+        for j in 2:n-1
+            S_list[(j,n)] = _hamiltonian_sum([
+                _hamiltonian_commutator(Ω_list[m], S_list[(j-1,n-m)])
+            for m in 1:n-j])
         end
-        push!(Ω_list, _hamiltonian_sum([_hamiltonian_integrate(_hamiltonian_scalar(_bernoulli_num_fact(j),S_list[(j,i)])) for j in 1:i-1]))
+
+        Ω_n = _hamiltonian_sum([
+            _hamiltonian_scalar(_bernoulli_num_fact(j),_hamiltonian_integrate(S_list[(j,n)]))
+        for j in 1:n-1])
+        push!(Ω_list, Ω_n)
     end
 
     return Ω_list
@@ -447,7 +530,7 @@ two_spin_model = Dict((1,2) => 2)
 ρ = QuantumAnnealing.simulate_tmp(two_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-4, max_tol=1e-2)
 =#
 
-function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
     end
@@ -521,7 +604,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
             (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
         ]
 
-        Ω_list = _magnus_generator(H, 2)
+        Ω_list = _magnus_generator(H, order)
         Ω = sum(_hamiltonian_eval(δs, Ωi) for Ωi in Ω_list)
 
         U_next = exp(Matrix(Ω))
@@ -537,7 +620,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
 end
 
 
-function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
+function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
     mean_delta = mean_tol + 1.0
     max_delta = max_tol + 1.0
@@ -547,7 +630,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
     end
 
-    ρ_prev = simulate(ising_model, annealing_time, annealing_schedule, steps; kwargs...)
+    ρ_prev = simulate(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
 
     iteration = 1
     while mean_delta >= mean_tol || max_delta >= max_tol
@@ -557,7 +640,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
             empty!(state_steps)
         end
 
-        ρ = simulate_tmp(ising_model, annealing_time, annealing_schedule, steps; state_steps=state_steps, kwargs...)
+        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
 
         ρ_delta = abs.(ρ .- ρ_prev)
         mean_delta = sum(ρ_delta)/length(ρ_delta)
