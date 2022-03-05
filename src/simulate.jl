@@ -140,7 +140,7 @@ end
 
 
 """
-a first order magnus expanion solver with a fixed number of steps
+a first order magnus expansion solver with a fixed number of steps
 """
 function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
@@ -224,7 +224,7 @@ end
 
 
 """
-a second order magnus expanion solver with a fixed number of steps
+a second order magnus expansion solver with a fixed number of steps
 """
 function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
@@ -528,9 +528,10 @@ two_spin_model = Dict((1,2) => 2)
 =#
 
 """
-an any-order magnus expanion solver with a fixed number of time steps
+an any-order magnus expansion solver with a fixed number of time steps
 """
 function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+    @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
     end
@@ -596,9 +597,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         b_1_shift = b_1 + 2*b_2*s0
         b_0_shift = b_0 + b_1*s0 + b_2*s0^2
 
-        a_int_eval = _poly_eval(δs, _poly_integrate([a_0_shift,a_1_shift,a_2_shift]))
-        b_int_eval = _poly_eval(δs, _poly_integrate([b_0_shift,b_1_shift,b_2_shift]))
-
         H = [
             (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=Matrix(-im*annealing_time .* x_component)),
             (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
@@ -621,7 +619,7 @@ end
 
 
 """
-a convergence tolerance-based any-order magnus expanion solver
+a convergence tolerance-based any-order magnus expansion solver
 """
 function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
@@ -661,6 +659,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
     if !silence
         println("")
         println("\033[1mconverged\033[0m")
+        Printf.@printf("   order.............: %d\n", order)
         Printf.@printf("   iterations........: %d\n", iteration-1)
         Printf.@printf("   simulation steps..: %d\n", steps)
         Printf.@printf("   maximum difference: %e <= %e\n", max_delta, max_tol)

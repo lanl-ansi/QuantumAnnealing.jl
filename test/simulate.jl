@@ -1,6 +1,5 @@
 
 @testset "simulate, 1 qubit" begin
-
     @testset "function schedule, default anneal time, analytical solution" begin
         ρ = simulate_o2(one_spin_model, 1.0, AS_CIRCULAR, 100)
         @test isapprox(one_spin_ρ(1.0), ρ)
@@ -148,12 +147,10 @@
         @test isapprox(ρ_list[1], (default_initial_state(1) * default_initial_state(1)'))
         @test isapprox(ρ_list[64], one_spin_ρ(1.0))
     end
-
 end
 
 
 @testset "simulate, 2 qubit" begin
-
     @testset "function schedule, default anneal time, analytical solution" begin
         ρ = simulate_o2(two_spin_model, 1.0, AS_CIRCULAR, 100)
         @test isapprox(two_spin_ρ(1.0), ρ)
@@ -168,7 +165,87 @@ end
         ρ = simulate_o2(two_spin_model, 2.0, AS_CIRCULAR, 100)
         @test isapprox(two_spin_ρ(2.0), ρ)
     end
+end
 
+
+@testset "simulate, any-order magnus expansion" begin
+    @testset "1 qubit, adaptive, orders 1 to 6" begin
+        at = 1.0
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 1, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 2, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 3, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 4, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 5, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        # note, this is time consuming (around 4.5 seconds)
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 6, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+    end
+
+    @testset "2 qubit, adaptive, orders 1 to 6" begin
+        at = 1.0
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 1, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 2, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 3, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 4, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 5, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        # note, this is time consuming (around 4.5 seconds)
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 6, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+    end
+
+    @testset "5 qubit, hardcoded first order solver" begin
+        ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
+
+        ρ_target = simulate_o1(ising_model, 2.0, AS_CIRCULAR, 4)
+        ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 4, 1)
+        @test isapprox(ρ_target, ρ)
+    end
+
+    @testset "5 qubit, hardcoded second order solver" begin
+        ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
+
+        ρ_target = simulate_o2(ising_model, 2.0, AS_CIRCULAR, 4)
+        ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 4, 2)
+        @test isapprox(ρ_target, ρ)
+    end
+
+    @testset "5 qubit, hardcoded second order solver, function schedules" begin
+        ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
+
+        ρ_target = simulate_o2(ising_model, 2.0, AS_LINEAR, 4)
+        ρ = simulate(ising_model, 2.0, AS_LINEAR, 4, 2)
+        @test isapprox(ρ_target, ρ)
+
+        ρ_target = simulate_o2(ising_model, 2.0, AS_QUADRATIC, 4)
+        ρ = simulate(ising_model, 2.0, AS_QUADRATIC, 4, 2)
+        @test isapprox(ρ_target, ρ)
+
+        ρ_target = simulate_o2(ising_model, 2.0, AS_DW_QUADRATIC, 4)
+        ρ = simulate(ising_model, 2.0, AS_DW_QUADRATIC, 4, 2)
+        @test isapprox(ρ_target, ρ)
+    end
 end
 
 
@@ -380,7 +457,6 @@ end
         @test isapprox(ρ_target, ρ, atol=1e-7)
         @test !isapprox(ρ_target, ρ, atol=1e-8)
     end
-
 end
 
 
@@ -456,7 +532,6 @@ end
         @test isapprox(ρ, ρ_de, atol=1e-6)
         @test !isapprox(ρ, ρ_de, atol=1e-7)
     end
-
 end
 
 
@@ -572,5 +647,4 @@ end
         @test dwisc_data["solutions"][1]["prob"] > 0.70 # true w.h.p.
         @test dwisc_data["variable_ids"] == [100]
     end
-
 end
