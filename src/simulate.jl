@@ -368,8 +368,8 @@ function _hamiltonian_commutator(h1::Vector, h2::Vector)
     return h
 end
 
-function _hamiltonian_integrate(h::Vector)
-    hi = [(poly=_poly_integrate(p), matrix=m) for (p,m) in h]
+function _hamiltonian_integrate(h_list::Vector)
+    hi = [(poly=_poly_integrate(p), matrix=m) for (p,m) in h_list]
     return hi
 end
 
@@ -383,8 +383,16 @@ function _hamiltonian_sum(h_list::Vector)
     return h_sum
 end
 
-function _hamiltonian_eval(x::Real, h::Vector)
-    val = sum(_poly_eval(x,p) .* m for (p,m) in h)
+function _hamiltonian_scalar(x::Real, h_list::Vector)
+    h_scaled = []
+    for h in h_list
+        push!(h_scaled, (poly=x .* h.poly, matrix=h.matrix))
+    end
+    return h_scaled
+end
+
+function _hamiltonian_eval(x::Real, h_list::Vector)
+    val = sum(_poly_eval(x,p) .* m for (p,m) in h_list)
     return val
 end
 
@@ -416,7 +424,7 @@ function _magnus_generator(A::Vector, order::Int)
         for j in 2:i-1
             S_list[(j,i)] = _hamiltonian_sum(_hamiltonian_commutator(Ω_list[m], S_list[(j-1,i-m)]) for m in 1:i-j)
         end
-        push!(Ω_list, _hamiltonian_sum([_hamiltonian_integrate(_bernoulli_num_fact(j)*S_list[(j,i)]) for j in 1:i-1]))
+        push!(Ω_list, _hamiltonian_sum([_hamiltonian_integrate(_hamiltonian_scalar(_bernoulli_num_fact(j),S_list[(j,i)])) for j in 1:i-1]))
     end
 
     return Ω_list
@@ -488,6 +496,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         push!(state_steps, R_current)
     end
 
+    # explore use of https://github.com/JuliaSymbolics/Symbolics.jl
     for i in 1:(steps-1)
         s0 = s_steps[i]
         s1 = s_steps[i+1]
@@ -508,32 +517,13 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         b_int_eval = _poly_eval(δs, _poly_integrate([b_0_shift,b_1_shift,b_2_shift]))
 
         H = [
-            (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=-im*annealing_time .* x_component),
-            (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=-im*annealing_time .* z_component)
+            (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=Matrix(-im*annealing_time .* x_component)),
+            (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
         ]
 
         Ω_list = _magnus_generator(H, 2)
-        Ω = sum(_hamiltonian_eval(δs, Ω_i) for Ω_i in Ω_list)
+        Ω = sum(_hamiltonian_eval(δs, Ωi) for Ωi in Ω_list)
 
-        #println(Ω1)
-
-        # integA = integral_1_sched(a_2, a_1, a_0, s0, δs)
-        # integB = integral_1_sched(b_2, b_1, b_0, s0, δs)
-        # integ2 = integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δs)
-
-        # integ2A = a_1*δs^3/6 + a_2*s0*δs^3/3 + a_2*δs^4/6
-        # integ2B = b_1*δs^3/6 + b_2*s0*δs^3/3 + b_2*δs^4/6
-
-        # Ω1Sched = integA * x_component + integB * z_component
-        # Ω1Const = δs * constant_component
-        # Ω1 = Ω1Sched + Ω1Const
-
-        # Ω2Sched = integ2 * xz_bracket 
-        # Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
-        # Ω2 = (Ω2Sched + Ω2Const)/2
-
-        #U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
-        #println(Matrix(Ω1))
         U_next = exp(Matrix(Ω))
         U = U_next * U
 
