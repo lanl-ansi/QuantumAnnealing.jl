@@ -373,16 +373,53 @@ function _hamiltonian_integrate(h::Vector)
     return hi
 end
 
+function _hamiltonian_sum(h_list::Vector)
+    h_sum = []
+    for h in h_list
+        for item in h
+            push!(h_sum, item)
+        end
+    end
+    return h_sum
+end
+
 function _hamiltonian_eval(x::Real, h::Vector)
     val = sum(_poly_eval(x,p) .* m for (p,m) in h)
     return val
 end
 
+
+function _bernoulli_num_fact(n)
+    if n == 1
+        return -0.5
+    end
+    A = Vector{Rational{BigInt}}(undef, n + 1)
+    for m = 0 : n
+        A[m + 1] = 1 // (m + 1)
+        for j = m : -1 : 1
+            A[j] = j * (A[j] - A[j + 1])
+        end
+    end
+    return float(A[1]/factorial(n))
+end
+
+# https://en.wikipedia.org/wiki/Magnus_expansion
 # H that is a poly for X and Z
 function _magnus_generator(A::Vector, order::Int)
-    #h = []
-    Ω1 = _hamiltonian_integrate(A)
-    return [Ω1]
+    # TODO order >= 1
+    Ω_list = [_hamiltonian_integrate(A)]
+
+    S_list = Dict()
+
+    for i in 2:order
+        S_list[(1,i)] = _hamiltonian_commutator(Ω_list[i-1], A)
+        for j in 2:i-1
+            S_list[(j,i)] = _hamiltonian_sum(_hamiltonian_commutator(Ω_list[m], S_list[(j-1,i-m)]) for m in 1:i-j)
+        end
+        push!(Ω_list, _hamiltonian_sum([_hamiltonian_integrate(_bernoulli_num_fact(j)*S_list[(j,i)]) for j in 1:i-1]))
+    end
+
+    return Ω_list
 end
 
 
@@ -467,24 +504,16 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         b_1_shift = b_1 + 2*b_2*s0
         b_0_shift = b_0 + b_1*s0 + b_2*s0^2
 
-        # println(a_2, " ", a_1, " ", a_0)
-        # println(a_2_shift, " ", a_1_shift, " ", a_0_shift)
-        # println()
-        
         a_int_eval = _poly_eval(δs, _poly_integrate([a_0_shift,a_1_shift,a_2_shift]))
         b_int_eval = _poly_eval(δs, _poly_integrate([b_0_shift,b_1_shift,b_2_shift]))
-        
-
-        #println(a_int_eval, " ", b_int_eval)
 
         H = [
-            (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=Matrix(-im*annealing_time .* x_component)),
-            (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
+            (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=-im*annealing_time .* x_component),
+            (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=-im*annealing_time .* z_component)
         ]
 
-        Ω_list = _magnus_generator(H, 1)
-        #display(Ω_list[1])
-        Ω1 = _hamiltonian_eval(δs, Ω_list[1])
+        Ω_list = _magnus_generator(H, 2)
+        Ω = sum(_hamiltonian_eval(δs, Ω_i) for Ω_i in Ω_list)
 
         #println(Ω1)
 
@@ -505,7 +534,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
 
         #U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
         #println(Matrix(Ω1))
-        U_next = exp(Matrix(Ω1))
+        U_next = exp(Matrix(Ω))
         U = U_next * U
 
         if track_states
