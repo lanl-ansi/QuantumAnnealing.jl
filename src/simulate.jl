@@ -657,7 +657,7 @@ function _bernoulli_num_fact(n)
             A[j] = j * (A[j] - A[j + 1])
         end
     end
-    return Float64(A[1]/factorial(n))
+    return Float64(A[1]/factorial(big(n)))
 end
 
 # https://en.wikipedia.org/wiki/Magnus_expansion
@@ -669,7 +669,6 @@ function _magnus_generator(H::Vector, order::Int)
     S_list = Dict()
 
     for n in 2:order
-        #println("order: $(n)")
         S_list[(1,n)] = _hamiltonian_commutator(Ω_list[n-1], H)
         for j in 2:n-1
             S_list[(j,n)] = _hamiltonian_sum([
@@ -853,3 +852,263 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
 end
 
 
+function _hamiltonian_commutator2(h1::Vector, h2::Vector)
+    h_prod = Dict{Int,Any}()
+
+    for (i,m1) in enumerate(h1)
+        for (j,m2) in enumerate(h2)
+            pow = (i-1)+(j-1)
+            if !haskey(h_prod, pow+1)
+                h_prod[pow+1] = _matrix_commutator(m1,m2)
+            else
+                h_prod[pow+1] += _matrix_commutator(m1,m2)
+            end
+        end
+    end
+
+    max_index = maximum(keys(h_prod))
+    h = Any[0.0 for i in 1:max_index]
+    for (k,v) in h_prod
+        h[k] = v
+    end
+
+    return h
+end
+
+
+function _hamiltonian_integrate2(h_list::Vector)
+    #ih = deepcopy(h_list) #Any[undef for i in 1:length(h_list)+1]
+    ih = Any[0.0 for i in 1:length(h_list)+1]
+    for (i,h) in enumerate(h_list)
+        ih[i+1] = h
+    end
+    ih[1] = 0.0.*ih[end]
+
+    # #prepend!(ih, zeros(size(ih[end])))
+    # println(typeof(ih))
+    # println(typeof(0.0.*ih[end]))
+
+    # prepend!(ih, 0.0.*ih[end])
+
+    for (i,h) in enumerate(ih)
+        if i != 1
+            ih[i] = h./(i-1)
+        end
+    end
+
+    return ih
+end
+# _hamiltonian_integrate2([[1.0],[2.0],[3.0],[4.0]])
+
+
+function _hamiltonian_sum2(h_list::Vector)
+    h_sum = Dict{Int,Any}()
+
+    for h in h_list
+        for (i,m) in enumerate(h)
+            if !haskey(h_sum, i)
+                h_sum[i] = m
+            else
+                h_sum[i] += m
+            end
+        end
+    end
+
+    max_index = maximum(keys(h_sum))
+    h = Any[0.0 for i in 1:max_index]
+    for (k,v) in h_sum
+        h[k] = v
+    end
+
+    return h
+end
+
+function _hamiltonian_scalar2(x::Real, h_list::Vector)
+    return [x*h for h in h_list]
+end
+
+function _hamiltonian_eval2(x::Real, h_list::Vector)
+    val = sum(h*x^(i-1) for (i,h) in enumerate(h_list))
+    return val
+end
+
+
+
+
+
+# https://iopscience.iop.org/article/10.1088/2399-6528/aab291
+function _magnus_generator2(H::Vector, order::Int)
+    @assert(order >= 1)
+
+    Ω_list = [_hamiltonian_integrate2(H)]
+    S_list = Dict()
+
+    for n in 2:order
+        S_list[(1,n)] = _hamiltonian_commutator2(Ω_list[n-1], H)
+        for j in 2:n-1
+            S_list[(j,n)] = _hamiltonian_sum2([
+                _hamiltonian_commutator2(Ω_list[m], S_list[(j-1,n-m)])
+            for m in 1:n-j])
+        end
+
+        Ω_n = _hamiltonian_sum2([
+            _hamiltonian_scalar2(_bernoulli_num_fact(j),_hamiltonian_integrate2(S_list[(j,n)]))
+        for j in 1:n-1])
+
+        push!(Ω_list, Ω_n)
+    end
+
+    return Ω_list
+end
+
+
+
+"""
+an any-order magnus expansion solver with a fixed number of time steps
+"""
+function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+    @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
+    if steps < 2
+        error("at least two steps are required by simulate, given $(steps)")
+    end
+
+    n = _check_ising_model_ids(ising_model)
+
+    if initial_state == nothing
+        initial_state = annealing_schedule.init_default(n)
+    end
+
+    if constant_field_x == nothing
+        constant_field_x = zeros(n)
+    end
+
+    if constant_field_z == nothing
+        constant_field_z = zeros(n)
+    end
+
+    track_states = !(state_steps == nothing)
+
+    t0 = 0
+    s0 = 0
+
+    R0 = initial_state * initial_state'
+
+    ηs = ones(n)
+    hs = zeros(n)
+
+    x_component = sum_x(n)
+    z_component = SparseArrays.spzeros(2^n, 2^n)
+    for (tup,w) in ising_model
+        z_component = z_component + sum_z_tup(n, tup, w)
+    end
+
+    xz_bracket = lie_bracket(x_component, z_component)
+
+    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
+    constant_bracket_x = lie_bracket(x_component, constant_component)
+    constant_bracket_z = lie_bracket(z_component, constant_component)
+
+    s_steps = range(0, 1, length=steps)
+    R_current = R0
+    U = foldl(kron, [IMAT for i = 1:n])
+
+    if track_states
+        push!(state_steps, R_current)
+    end
+
+    # explore use of https://github.com/JuliaSymbolics/Symbolics.jl
+    for i in 1:(steps-1)
+        s0 = s_steps[i]
+        s1 = s_steps[i+1]
+        δs = s1 - s0
+
+        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
+        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
+
+        a_2_shift = a_2
+        a_1_shift = a_1 + 2*a_2*s0
+        a_0_shift = a_0 + a_1*s0 + a_2*s0^2
+
+        b_2_shift = b_2
+        b_1_shift = b_1 + 2*b_2*s0
+        b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+
+        H = -im*annealing_time*[
+            a_0_shift * x_component + b_0_shift * z_component,
+            a_1_shift * x_component + b_1_shift * z_component,
+            a_2_shift * x_component + b_2_shift * z_component,
+        ]
+
+        #Ω_list = _magnus_generator2([Matrix(H), order)
+        Ω_list = _magnus_generator2([Matrix(h) for h in H], order)
+        #for (i,Ωi) in enumerate(Ω_list)
+        #   println("Ω_$(i)")
+        #   display(Matrix(_hamiltonian_eval2(δs, Ωi)))
+        #end
+        Ω = sum(_hamiltonian_eval2(δs, Ωi) for Ωi in Ω_list)
+
+        U_next = exp(Matrix(Ω))
+        U = U_next * U
+
+        if track_states
+            R_current = U * R0 * U'
+            push!(state_steps, R_current)
+        end
+    end
+
+    return U * R0 * U'
+end
+
+
+"""
+a convergence tolerance-based any-order magnus expansion solver
+"""
+function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
+    start_time = time()
+    mean_delta = mean_tol + 1.0
+    max_delta = max_tol + 1.0
+
+    if !silence
+        println()
+        println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
+    end
+
+    ρ_prev = simulate_tmp(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
+
+    iteration = 1
+    while mean_delta >= mean_tol || max_delta >= max_tol
+        steps *= 2
+
+        if state_steps != nothing
+            empty!(state_steps)
+        end
+
+        ρ = simulate_tmp(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
+
+        ρ_delta = abs.(ρ .- ρ_prev)
+        mean_delta = sum(ρ_delta)/length(ρ_delta)
+        max_delta = maximum(ρ_delta)
+
+        !silence && Printf.@printf("%4d | %7d | %e | %e |\n", iteration, steps, max_delta, mean_delta)
+
+        ρ_prev = ρ
+        iteration += 1
+        if iteration > iteration_limit
+            error("iteration limit reached in simulate function without reaching convergence criteria")
+        end
+    end
+
+    if !silence
+        println("")
+        println("\033[1mconverged\033[0m")
+        Printf.@printf("   order.............: %d\n", order)
+        Printf.@printf("   iterations........: %d\n", iteration-1)
+        Printf.@printf("   simulation steps..: %d\n", steps)
+        Printf.@printf("   maximum difference: %e <= %e\n", max_delta, max_tol)
+        Printf.@printf("   mean difference...: %e <= %e\n", mean_delta, mean_tol)
+        Printf.@printf("   runtime (seconds).: %f\n", time()-start_time)
+        println("")
+    end
+
+    return ρ_prev
+end
