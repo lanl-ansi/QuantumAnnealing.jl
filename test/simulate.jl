@@ -169,6 +169,31 @@ end
 
 
 @testset "simulate, any-order magnus expansion" begin
+    @testset "magnus generator subroutines" begin
+        mc = QuantumAnnealing._matrix_commutator([1 2; 3 4], [5 6; 7 8])
+        @test isapprox([-4 -12; 12 4], mc)
+
+        he = QuantumAnnealing._hamiltonian_eval(2, [[1],[2],[3],[4]])
+        @test isapprox([49], he)
+
+        hs = QuantumAnnealing._hamiltonian_scalar(2, [[1],[2],[3],[4]])
+        @test isapprox([[2],[4],[6],[8]], hs)
+
+        hi = QuantumAnnealing._hamiltonian_integrate([[1],[2],[3],[4]])
+        @test isapprox([[0], [1], [1], [1], [1]], hi)
+
+        hs = QuantumAnnealing._hamiltonian_sum([[1,2,3,4],[5,6]])
+        @test isapprox([6,8,3,4], hs)
+
+        hc = QuantumAnnealing._hamiltonian_commutator([[1 2; 3 4],[1 2; 3 4],[1 2; 3 4],[1 2; 3 4]],[[5 6; 7 8],[9 10; 11 12]])
+        @test isapprox([[-4 -12; 12 4], [-12 -36; 36 12], [-12 -36; 36 12], [-12 -36; 36 12], [-8 -24; 24 8]], hc)
+
+        bernoulli_fact_numbers = [-0.5, 0.08333333333333333, 0.0, -0.001388888888888889, 0.0, 3.306878306878307e-5]
+        for (i,v) in enumerate(bernoulli_fact_numbers)
+            @test isapprox(QuantumAnnealing._bernoulli_factorial(i), v)
+        end
+    end
+
     @testset "1 qubit, adaptive, orders 1 to 8" begin
         at = 1.0
 

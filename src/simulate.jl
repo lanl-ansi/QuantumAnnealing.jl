@@ -29,7 +29,7 @@ function get_function_coefficients(f, s0, s1)
     return x
 end
 
-function lie_bracket(A, B)
+function _lie_bracket(A, B)
     return -im * (A*B - B*A)
 end
 
@@ -177,11 +177,11 @@ function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    xz_bracket = lie_bracket(x_component, z_component)
+    xz_bracket = _lie_bracket(x_component, z_component)
 
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = lie_bracket(x_component, constant_component)
-    constant_bracket_z = lie_bracket(z_component, constant_component)
+    constant_bracket_x = _lie_bracket(x_component, constant_component)
+    constant_bracket_z = _lie_bracket(z_component, constant_component)
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
@@ -261,11 +261,11 @@ function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    xz_bracket = lie_bracket(x_component, z_component)
+    xz_bracket = _lie_bracket(x_component, z_component)
 
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = lie_bracket(x_component, constant_component)
-    constant_bracket_z = lie_bracket(z_component, constant_component)
+    constant_bracket_x = _lie_bracket(x_component, constant_component)
+    constant_bracket_z = _lie_bracket(z_component, constant_component)
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
@@ -347,11 +347,11 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    xz_bracket = lie_bracket(x_component, z_component)
+    xz_bracket = _lie_bracket(x_component, z_component)
 
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = lie_bracket(x_component, constant_component)
-    constant_bracket_z = lie_bracket(z_component, constant_component)
+    constant_bracket_x = _lie_bracket(x_component, constant_component)
+    constant_bracket_z = _lie_bracket(z_component, constant_component)
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
@@ -377,14 +377,6 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         b_1_shift = b_1 + 2*b_2*s0
         b_0_shift = b_0 + b_1*s0 + b_2*s0^2
 
-        # H = [
-        #     (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=Matrix(-im*annealing_time .* x_component)),
-        #     (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
-        # ]
-
-        # Ω_list = _magnus_generator(H, order)
-        # Ω = sum(_hamiltonian_eval(δs, Ωi) for Ωi in Ω_list)
-
         a_2_shift2 = δs^2*a_2_shift
         a_1_shift2 = δs*a_1_shift
         a_0_shift2 = a_0_shift
@@ -393,12 +385,12 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         b_1_shift2 = δs*b_1_shift
         b_0_shift2 = b_0_shift
 
-        Q21 = lie_bracket(x_component, z_component)
-        Q31 = lie_bracket(x_component, Q21)
-        Q32 = lie_bracket(Q21, z_component)
-        Q41 = lie_bracket(x_component, Q31)
-        Q42 = lie_bracket(x_component, Q32)
-        Q43 = lie_bracket(z_component, Q32)
+        Q21 = _lie_bracket(x_component, z_component)
+        Q31 = _lie_bracket(x_component, Q21)
+        Q32 = _lie_bracket(Q21, z_component)
+        Q41 = _lie_bracket(x_component, Q31)
+        Q42 = _lie_bracket(x_component, Q32)
+        Q43 = _lie_bracket(z_component, Q32)
 
         a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
         b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
@@ -409,11 +401,10 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*Q31 + _int31(b_vec,a_vec)*Q32)
         #Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*Q41 + _int42(a_vec,b_vec)*Q42 + _int41(b_vec,a_vec)*Q43)
 
-        display(Matrix(Ω1))
-        display(Matrix(Ω2))
-        display(Matrix(Ω3))
+        #display(Matrix(Ω1))
+        #display(Matrix(Ω2))
+        #display(Matrix(Ω3))
         #display(Matrix(Ω4))
-
 
         #U_next = exp(Matrix(Ω1))
         #U_next = exp(Matrix(Ω1 + Ω2))
@@ -556,117 +547,90 @@ end
 
 
 
-
-
-function _poly_product(p1::Vector{<:Real}, p2::Vector{<:Real})
-    p_prod = Dict{Int,Float64}()
-    for (i,c1) in enumerate(p1)
-        for (j,c2) in enumerate(p2)
-            pow = (i-1)+(j-1)
-            if !haskey(p_prod, pow+1)
-                p_prod[pow+1] = 0.0
-            end
-            p_prod[pow+1] += c1 * c2
-        end
-    end
-    max_index = maximum(keys(p_prod))
-    p = [0.0 for i in 1:max_index]
-    for (k,v) in p_prod
-        p[k] = v
-    end
-    return p
-end
-#_poly_product([1,1], [1,1])
-
-
-function _poly_integrate(p::Vector{<:Real})
-    ip = [0.0 for i in 1:length(p)+1]
-
-    for (i,c) in enumerate(p)
-        ip[i+1] = c/(i)
-    end
-
-    return ip
-end
-#_poly_integrate([1,1])
-
-
-function _poly_eval(x::Real, p::Vector{<:Real})
-    return sum(v*x^(i-1) for (i,v) in enumerate(p))
-end
-# _poly_eval(2, [1,1,1])
-# _poly_eval(2, _poly_integrate([1,1,1]))
-
-
-function _matrix_commutator(a::Matrix, b::Matrix)
-    # if cancels return zero (TBD)
-    return a*b - b*a
-end
-
-function _hamiltonian_commutator(h1::Vector, h2::Vector)
-    h = []
-    for (p1,m1) in h1
-        for (p2,m2) in h2
-            pp = _poly_product(p1,p2)
-            mc = _matrix_commutator(m1,m2)
-            # push only if MC is non-zero (if any value above abs tol)
-            push!(h, (poly=pp, matrix=mc))
-        end
-    end
-    return h
-end
-
-function _hamiltonian_integrate(h_list::Vector)
-    hi = [(poly=_poly_integrate(p), matrix=m) for (p,m) in h_list]
-    return hi
-end
-
-function _hamiltonian_sum(h_list::Vector)
-    h_sum = []
-    for h in h_list
-        for item in h
-            push!(h_sum, item)
-        end
-    end
-    println(length(h_sum))
-    return h_sum
-end
-
-function _hamiltonian_scalar(x::Real, h_list::Vector)
-    h_scaled = []
-    for h in h_list
-        push!(h_scaled, (poly=x .* h.poly, matrix=h.matrix))
-    end
-    return h_scaled
-end
-
-function _hamiltonian_eval(x::Real, h_list::Vector)
-    val = sum(_poly_eval(x,p) .* m for (p,m) in h_list)
-    return val
-end
-
-
-function _bernoulli_num_fact(n)
+"computes the n-th Bernoulli number divided by n-th factorial number"
+function _bernoulli_factorial(n)
     if n == 1
         return -0.5
     end
-    A = Vector{Rational{BigInt}}(undef, n + 1)
-    for m = 0 : n
-        A[m + 1] = 1 // (m + 1)
-        for j = m : -1 : 1
-            A[j] = j * (A[j] - A[j + 1])
+
+    v = Vector{Rational{BigInt}}(undef, n+1)
+    for m in 0:n
+        v[m + 1] = 1//(m+1)
+        for j in m:-1:1
+            v[j] = j*(v[j] - v[j+1])
         end
     end
-    return Float64(A[1]/factorial(big(n)))
+
+    return Float64(v[1]/factorial(big(n)))
 end
 
-# https://en.wikipedia.org/wiki/Magnus_expansion
-# Initial H is a polynomal of X and Z
+"given to matricies, applies the commutator operation"
+function _matrix_commutator(a,b)
+    return a*b - b*a
+end
+
+"given two hamiltonians of orders 0-to-(n-1) and 0-to-(m-1), applies the _matrix_commutator operation"
+function _hamiltonian_commutator(h1::Vector, h2::Vector)
+    max_index = (length(h1)-1)+(length(h2)-1)+1
+    zeros = 0*(h1[1]*h2[2])
+    h_prod = [deepcopy(zeros) for i in 1:max_index]
+
+    for (i,m1) in enumerate(h1)
+        for (j,m2) in enumerate(h2)
+            pow = (i-1)+(j-1)
+            h_prod[pow+1] += _matrix_commutator(m1,m2)
+        end
+    end
+
+    return h_prod
+end
+
+"given a hamiltonian of orders 0-to-(n-1), multiplies all orders by a scalar"
+function _hamiltonian_eval(x::Real, h_list::Vector)
+    return sum(h*x^(i-1) for (i,h) in enumerate(h_list))
+end
+
+"given a hamiltonian of orders 0-to-(n-1), multiplies all orders by a scalar"
+function _hamiltonian_scalar(x::Real, h_list::Vector)
+    return [x*h for h in h_list]
+end
+
+"given a hamiltonian of orders 0-to-(n-1), returns an integrated hamiltonian of 0-to-n"
+function _hamiltonian_integrate(h::Vector)
+    ih = [i==1 ? (0*h[1]) : h[i-1] for i in 1:length(h)+1]
+
+    for (i,h) in enumerate(ih)
+        if i != 1
+            ih[i] = h./(i-1)
+        end
+    end
+
+    return ih
+end
+
+
+"given a list of order-based hamiltonians (which are also vectors), returns the sum of these"
+function _hamiltonian_sum(h_list::Vector)
+    max_index = maximum(length(h) for h in h_list)
+    zeros = 0*(h_list[1][1])
+    h_sum = [deepcopy(zeros) for i in 1:max_index]
+
+    for h in h_list
+        for (i,m) in enumerate(h)
+            h_sum[i] += m
+        end
+    end
+
+    return h_sum
+end
+
+
+# https://iopscience.iop.org/article/10.1088/2399-6528/aab291
 function _magnus_generator(H::Vector, order::Int)
     @assert(order >= 1)
 
     Ω_list = [_hamiltonian_integrate(H)]
-    S_list = Dict()
+    S_list = Dict{Tuple{Int64,Int64},Any}()
 
     for n in 2:order
         S_list[(1,n)] = _hamiltonian_commutator(Ω_list[n-1], H)
@@ -677,7 +641,7 @@ function _magnus_generator(H::Vector, order::Int)
         end
 
         Ω_n = _hamiltonian_sum([
-            _hamiltonian_scalar(_bernoulli_num_fact(j),_hamiltonian_integrate(S_list[(j,n)]))
+            _hamiltonian_scalar(_bernoulli_factorial(j),_hamiltonian_integrate(S_list[(j,n)]))
         for j in 1:n-1])
 
         push!(Ω_list, Ω_n)
@@ -685,282 +649,6 @@ function _magnus_generator(H::Vector, order::Int)
 
     return Ω_list
 end
-
-
-#=
-two_spin_X = Complex{Float64}[0.0 1.0 1.0 0.0; 1.0  0.0 0.0 1.0; 1.0 0.0  0.0 1.0; 0.0 1.0 1.0 0.0]
-two_spin_Z = Complex{Float64}[2.0 0.0 0.0 0.0; 0.0 -2.0 0.0 0.0; 0.0 0.0 -2.0 0.0; 0.0 0.0 0.0 2.0]
-
-a_2, a_1, a_0 = get_function_coefficients(AS_CIRCULAR.A, 0.1, 0.2)
-b_2, b_1, b_0 = get_function_coefficients(AS_CIRCULAR.B, 0.1, 0.2)
-
-H = [(poly=[a_0,a_1,a_2], matrix=-im.*two_spin_X), (poly=[b_0,b_1,b_2], matrix=-im.*two_spin_Z)]
-_magnus_generator(H, 1)
-
-
-two_spin_model = Dict((1,2) => 2)
-ρ = QuantumAnnealing.simulate_tmp(two_spin_model, 10.0, AS_CIRCULAR, 2)
-ρ = QuantumAnnealing.simulate_tmp(two_spin_model, 1.0, AS_CIRCULAR, mean_tol=1e-4, max_tol=1e-2)
-=#
-
-"""
-an any-order magnus expansion solver with a fixed number of time steps
-"""
-function simulate_old(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
-    @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
-    if steps < 2
-        error("at least two steps are required by simulate, given $(steps)")
-    end
-
-    n = _check_ising_model_ids(ising_model)
-
-    if initial_state == nothing
-        initial_state = annealing_schedule.init_default(n)
-    end
-
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
-    track_states = !(state_steps == nothing)
-
-    t0 = 0
-    s0 = 0
-
-    R0 = initial_state * initial_state'
-
-    ηs = ones(n)
-    hs = zeros(n)
-
-    x_component = sum_x(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
-    end
-
-    xz_bracket = lie_bracket(x_component, z_component)
-
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = lie_bracket(x_component, constant_component)
-    constant_bracket_z = lie_bracket(z_component, constant_component)
-
-    s_steps = range(0, 1, length=steps)
-    R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
-
-    if track_states
-        push!(state_steps, R_current)
-    end
-
-    # explore use of https://github.com/JuliaSymbolics/Symbolics.jl
-    for i in 1:(steps-1)
-        s0 = s_steps[i]
-        s1 = s_steps[i+1]
-        δs = s1 - s0
-
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        a_2_shift = a_2
-        a_1_shift = a_1 + 2*a_2*s0
-        a_0_shift = a_0 + a_1*s0 + a_2*s0^2
-
-        b_2_shift = b_2
-        b_1_shift = b_1 + 2*b_2*s0
-        b_0_shift = b_0 + b_1*s0 + b_2*s0^2
-
-        H = [
-            (poly=[a_0_shift,a_1_shift,a_2_shift], matrix=Matrix(-im*annealing_time .* x_component)),
-            (poly=[b_0_shift,b_1_shift,b_2_shift], matrix=Matrix(-im*annealing_time .* z_component))
-        ]
-
-        Ω_list = _magnus_generator(H, order)
-        #for (i,Ωi) in enumerate(Ω_list)
-        #    println("Ω_$(i)")
-        #    display(Matrix(_hamiltonian_eval(δs, Ωi)))
-        #end
-        Ω = sum(_hamiltonian_eval(δs, Ωi) for Ωi in Ω_list)
-
-        U_next = exp(Matrix(Ω))
-        U = U_next * U
-
-        if track_states
-            R_current = U * R0 * U'
-            push!(state_steps, R_current)
-        end
-    end
-
-    return U * R0 * U'
-end
-
-
-"""
-a convergence tolerance-based any-order magnus expansion solver
-"""
-function simulate_old(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
-    start_time = time()
-    mean_delta = mean_tol + 1.0
-    max_delta = max_tol + 1.0
-
-    if !silence
-        println()
-        println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
-    end
-
-    ρ_prev = simulate(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
-
-    iteration = 1
-    while mean_delta >= mean_tol || max_delta >= max_tol
-        steps *= 2
-
-        if state_steps != nothing
-            empty!(state_steps)
-        end
-
-        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
-
-        ρ_delta = abs.(ρ .- ρ_prev)
-        mean_delta = sum(ρ_delta)/length(ρ_delta)
-        max_delta = maximum(ρ_delta)
-
-        !silence && Printf.@printf("%4d | %7d | %e | %e |\n", iteration, steps, max_delta, mean_delta)
-
-        ρ_prev = ρ
-        iteration += 1
-        if iteration > iteration_limit
-            error("iteration limit reached in simulate function without reaching convergence criteria")
-        end
-    end
-
-    if !silence
-        println("")
-        println("\033[1mconverged\033[0m")
-        Printf.@printf("   order.............: %d\n", order)
-        Printf.@printf("   iterations........: %d\n", iteration-1)
-        Printf.@printf("   simulation steps..: %d\n", steps)
-        Printf.@printf("   maximum difference: %e <= %e\n", max_delta, max_tol)
-        Printf.@printf("   mean difference...: %e <= %e\n", mean_delta, mean_tol)
-        Printf.@printf("   runtime (seconds).: %f\n", time()-start_time)
-        println("")
-    end
-
-    return ρ_prev
-end
-
-
-function _hamiltonian_commutator2(h1::Vector, h2::Vector)
-    h_prod = Dict{Int,Any}()
-
-    for (i,m1) in enumerate(h1)
-        for (j,m2) in enumerate(h2)
-            pow = (i-1)+(j-1)
-            if !haskey(h_prod, pow+1)
-                h_prod[pow+1] = _matrix_commutator(m1,m2)
-            else
-                h_prod[pow+1] += _matrix_commutator(m1,m2)
-            end
-        end
-    end
-
-    max_index = maximum(keys(h_prod))
-    h = Any[0.0 for i in 1:max_index]
-    for (k,v) in h_prod
-        h[k] = v
-    end
-
-    return h
-end
-
-
-function _hamiltonian_integrate2(h_list::Vector)
-    #ih = deepcopy(h_list) #Any[undef for i in 1:length(h_list)+1]
-    ih = Any[0.0 for i in 1:length(h_list)+1]
-    for (i,h) in enumerate(h_list)
-        ih[i+1] = h
-    end
-    ih[1] = 0.0.*ih[end]
-
-    # #prepend!(ih, zeros(size(ih[end])))
-    # println(typeof(ih))
-    # println(typeof(0.0.*ih[end]))
-
-    # prepend!(ih, 0.0.*ih[end])
-
-    for (i,h) in enumerate(ih)
-        if i != 1
-            ih[i] = h./(i-1)
-        end
-    end
-
-    return ih
-end
-# _hamiltonian_integrate2([[1.0],[2.0],[3.0],[4.0]])
-
-
-function _hamiltonian_sum2(h_list::Vector)
-    h_sum = Dict{Int,Any}()
-
-    for h in h_list
-        for (i,m) in enumerate(h)
-            if !haskey(h_sum, i)
-                h_sum[i] = m
-            else
-                h_sum[i] += m
-            end
-        end
-    end
-
-    max_index = maximum(keys(h_sum))
-    h = Any[0.0 for i in 1:max_index]
-    for (k,v) in h_sum
-        h[k] = v
-    end
-
-    return h
-end
-
-function _hamiltonian_scalar2(x::Real, h_list::Vector)
-    return [x*h for h in h_list]
-end
-
-function _hamiltonian_eval2(x::Real, h_list::Vector)
-    val = sum(h*x^(i-1) for (i,h) in enumerate(h_list))
-    return val
-end
-
-
-
-
-
-# https://iopscience.iop.org/article/10.1088/2399-6528/aab291
-function _magnus_generator2(H::Vector, order::Int)
-    @assert(order >= 1)
-
-    Ω_list = [_hamiltonian_integrate2(H)]
-    S_list = Dict()
-
-    for n in 2:order
-        S_list[(1,n)] = _hamiltonian_commutator2(Ω_list[n-1], H)
-        for j in 2:n-1
-            S_list[(j,n)] = _hamiltonian_sum2([
-                _hamiltonian_commutator2(Ω_list[m], S_list[(j-1,n-m)])
-            for m in 1:n-j])
-        end
-
-        Ω_n = _hamiltonian_sum2([
-            _hamiltonian_scalar2(_bernoulli_num_fact(j),_hamiltonian_integrate2(S_list[(j,n)]))
-        for j in 1:n-1])
-
-        push!(Ω_list, Ω_n)
-    end
-
-    return Ω_list
-end
-
 
 
 """
@@ -1002,11 +690,11 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    xz_bracket = lie_bracket(x_component, z_component)
+    xz_bracket = _lie_bracket(x_component, z_component)
 
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = lie_bracket(x_component, constant_component)
-    constant_bracket_z = lie_bracket(z_component, constant_component)
+    constant_bracket_x = _lie_bracket(x_component, constant_component)
+    constant_bracket_z = _lie_bracket(z_component, constant_component)
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
@@ -1039,13 +727,13 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
             a_2_shift * x_component + b_2_shift * z_component,
         ]
 
-        #Ω_list = _magnus_generator2([Matrix(H), order)
-        Ω_list = _magnus_generator2([Matrix(h) for h in H], order)
+        #Ω_list = _magnus_generator([Matrix(h) for h in H], order)
+        Ω_list = _magnus_generator(H, order)
         #for (i,Ωi) in enumerate(Ω_list)
         #   println("Ω_$(i)")
         #   display(Matrix(_hamiltonian_eval2(δs, Ωi)))
         #end
-        Ω = sum(_hamiltonian_eval2(δs, Ωi) for Ωi in Ω_list)
+        Ω = sum(_hamiltonian_eval(δs, Ωi) for Ωi in Ω_list)
 
         U_next = exp(Matrix(Ω))
         U = U_next * U
