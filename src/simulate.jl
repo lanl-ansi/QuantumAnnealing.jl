@@ -458,6 +458,168 @@ function simulate_o4(ising_model::Dict, annealing_time::Real, annealing_schedule
 end
 
 
+
+function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+    if steps < 2
+        error("at least two steps are required by simulate_fixed_order, given $(steps)")
+    end
+    if !(1 <= order && order <= 4)
+        error("simulate_fixed_order only supports orders from 1-to-4, given $(order)")
+    end
+
+    n = _check_ising_model_ids(ising_model)
+
+    if initial_state == nothing
+        initial_state = annealing_schedule.init_default(n)
+    end
+
+    if constant_field_x == nothing
+        constant_field_x = zeros(n)
+    end
+
+    if constant_field_z == nothing
+        constant_field_z = zeros(n)
+    end
+
+    track_states = !(state_steps == nothing)
+
+    t0 = 0
+    s0 = 0
+
+    R0 = initial_state * initial_state'
+
+    ηs = ones(n)
+    hs = zeros(n)
+
+    x_component = sum_x(n)
+    z_component = SparseArrays.spzeros(2^n, 2^n)
+    for (tup,w) in ising_model
+        z_component = z_component + sum_z_tup(n, tup, w)
+    end
+
+    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
+    constant_bracket_x = _lie_bracket(x_component, constant_component)
+    constant_bracket_z = _lie_bracket(z_component, constant_component)
+
+    H_parts = _H_parts(x_component, z_component, order)
+
+    s_steps = range(0, 1, length=steps)
+    R_current = R0
+    U = foldl(kron, [IMAT for i = 1:n])
+
+    if track_states
+        push!(state_steps, R_current)
+    end
+
+    for i in 1:(steps-1)
+        s0 = s_steps[i]
+        s1 = s_steps[i+1]
+        δs = s1 - s0
+
+        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
+        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
+
+        Ω_list = _Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], H_parts, order)
+
+        #for (i,Ωi) in enumerate(Ω_list)
+        #   println("Ω_$(i)")
+        #   display(Matrix(_hamiltonian_eval2(δs, Ωi)))
+        #end
+
+        U_next = exp(Matrix(sum(Ω_list)))
+        U = U_next * U
+
+        if track_states
+            R_current = U * R0 * U'
+            push!(state_steps, R_current)
+        end
+    end
+
+    return U * R0 * U'
+end
+
+
+
+
+function _H_parts(x_component, z_component, order::Int)
+    @assert(1 <= order && order <= 4)
+
+    parts = Dict{Any,Any}(
+        (1,) => x_component,
+        (2,) => z_component
+    )
+
+    if order >= 2
+        parts[(2,1)] = _lie_bracket(x_component, z_component)
+    end
+    if order >= 3
+        parts[(3,1)] = _lie_bracket(x_component, parts[(2,1)])
+        parts[(3,2)] = _lie_bracket(parts[(2,1)], z_component)
+    end
+    if order >= 4
+        parts[(4,1)] = _lie_bracket(x_component, parts[(3,1)])
+        parts[(4,2)] = _lie_bracket(x_component, parts[(3,2)])
+        parts[(4,3)] = _lie_bracket(z_component, parts[(3,2)])
+    end
+
+    return parts
+end
+
+
+function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients::Vector, b_coefficients::Vector, H_parts::Dict, order::Int)
+    @assert(1 <= order && order <= 4)
+    δs = s1 - s0
+    δst = annealing_time*δs
+
+    a_2, a_1, a_0 = a_coefficients
+    b_2, b_1, b_0 = b_coefficients
+
+    a_2_shift = a_2
+    a_1_shift = a_1 + 2*a_2*s0
+    a_0_shift = a_0 + a_1*s0 + a_2*s0^2
+
+    b_2_shift = b_2
+    b_1_shift = b_1 + 2*b_2*s0
+    b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+
+    a_2_shift2 = δs^2*a_2_shift
+    a_1_shift2 = δs*a_1_shift
+    a_0_shift2 = a_0_shift
+
+    b_2_shift2 = δs^2*b_2_shift
+    b_1_shift2 = δs*b_1_shift
+    b_0_shift2 = b_0_shift
+
+    # Q21 = _lie_bracket(x_component, z_component)
+    # Q31 = _lie_bracket(x_component, Q21)
+    # Q32 = _lie_bracket(Q21, z_component)
+    # Q41 = _lie_bracket(x_component, Q31)
+    # Q42 = _lie_bracket(x_component, Q32)
+    # Q43 = _lie_bracket(z_component, Q32)
+
+    a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
+    b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
+
+    Ω1 = -im*δst*(_int1(a_vec)*H_parts[(1,)] + _int1(b_vec)*H_parts[(2,)])
+    Ω_list = [Ω1]
+
+    if order >= 2
+        Ω2 = -im*δst^2/2*(_int21(a_vec,b_vec)*H_parts[(2,1)])
+        push!(Ω_list, Ω2)
+    end
+    if order >= 3
+        Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*H_parts[(3,1)] + _int31(b_vec,a_vec)*H_parts[(3,2)])
+        push!(Ω_list, Ω3)
+    end
+    if order >= 4
+        Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*H_parts[(4,1)] + _int42(a_vec,b_vec)*H_parts[(4,2)] + _int41(b_vec,a_vec)*H_parts[(4,3)])
+        push!(Ω_list, Ω4)
+    end
+
+    return Ω_list
+end
+
+
 function _int1(u::Vector)
     return u[1] + u[2]/2 + u[3]/3
 end
@@ -511,51 +673,6 @@ function _int42(u::Vector, v::Vector)
         u[3]^2*v[2]*v[3]/3960 - 17*u[1]^2*v[3]^2/2520 -
         17*u[1]*u[2]*v[3]^2/5040 - u[2]^2*v[3]^2/2016 -
         u[1]*u[3]*v[3]^2/1260 - u[2]*u[3]*v[3]^2/3960
-end
-
-
-function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients, b_coefficients, x_component, z_component, order::Int)
-    @assert(1 <= order && order <= 4)
-    δs = s1 - s0
-    δst = annealing_time*δs
-
-    a_2, a_1, a_0 = a_coefficients
-    b_2, b_1, b_0 = b_coefficients
-
-    a_2_shift = a_2
-    a_1_shift = a_1 + 2*a_2*s0
-    a_0_shift = a_0 + a_1*s0 + a_2*s0^2
-
-    b_2_shift = b_2
-    b_1_shift = b_1 + 2*b_2*s0
-    b_0_shift = b_0 + b_1*s0 + b_2*s0^2
-
-    a_2_shift2 = δs^2*a_2_shift
-    a_1_shift2 = δs*a_1_shift
-    a_0_shift2 = a_0_shift
-
-    b_2_shift2 = δs^2*b_2_shift
-    b_1_shift2 = δs*b_1_shift
-    b_0_shift2 = b_0_shift
-
-    Q21 = _lie_bracket(x_component, z_component)
-    Q31 = _lie_bracket(x_component, Q21)
-    Q32 = _lie_bracket(Q21, z_component)
-    Q41 = _lie_bracket(x_component, Q31)
-    Q42 = _lie_bracket(x_component, Q32)
-    Q43 = _lie_bracket(z_component, Q32)
-
-    a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
-    b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
-
-    Ω1 = -im*δst*(_int1(a_vec)*x_component + _int1(b_vec)*z_component)
-    Ω2 = -im*δst^2/2*(_int21(a_vec,b_vec)*Q21)
-    Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*Q31 + _int31(b_vec,a_vec)*Q32)
-    Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*Q41 + _int42(a_vec,b_vec)*Q42 + _int41(b_vec,a_vec)*Q43)
-
-    Ω_list = [Ω1, Ω2, Ω3, Ω4]
-
-    return Ω_list[1:order]
 end
 
 

@@ -228,7 +228,7 @@ end
     @testset "5 qubit, hardcoded first order solver" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o1(ising_model, 2.0, AS_CIRCULAR, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_CIRCULAR, 2, 1)
         ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, 1)
         @test isapprox(ρ_target, ρ)
     end
@@ -236,7 +236,7 @@ end
     @testset "5 qubit, hardcoded second order solver" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o2(ising_model, 2.0, AS_CIRCULAR, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_CIRCULAR, 2, 2)
         ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, 2)
         @test isapprox(ρ_target, ρ)
     end
@@ -244,7 +244,7 @@ end
     @testset "5 qubit, hardcoded third order solver" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o3(ising_model, 2.0, AS_CIRCULAR, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_CIRCULAR, 2, 3)
         ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, 3)
         @test isapprox(ρ_target, ρ)
     end
@@ -252,7 +252,7 @@ end
     @testset "5 qubit, hardcoded forth order solver" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o4(ising_model, 2.0, AS_CIRCULAR, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_CIRCULAR, 2, 4)
         ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, 4)
         @test isapprox(ρ_target, ρ)
     end
@@ -260,15 +260,15 @@ end
     @testset "5 qubit, hardcoded forth order solver, function schedules" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o4(ising_model, 2.0, AS_LINEAR, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_LINEAR, 2, 4)
         ρ = simulate(ising_model, 2.0, AS_LINEAR, 2, 4)
         @test isapprox(ρ_target, ρ)
 
-        ρ_target = simulate_o4(ising_model, 2.0, AS_QUADRATIC, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_QUADRATIC, 2, 4)
         ρ = simulate(ising_model, 2.0, AS_QUADRATIC, 2, 4)
         @test isapprox(ρ_target, ρ)
 
-        ρ_target = simulate_o4(ising_model, 2.0, AS_DW_QUADRATIC, 2)
+        ρ_target = simulate_fixed_order(ising_model, 2.0, AS_DW_QUADRATIC, 2, 4)
         ρ = simulate(ising_model, 2.0, AS_DW_QUADRATIC, 2, 4)
         @test isapprox(ρ_target, ρ)
     end

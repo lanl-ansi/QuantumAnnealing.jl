@@ -25,7 +25,7 @@
         end
     end
 
-    @testset "Ω computations, orders 1 to 3" begin
+    @testset "Ω computations, orders 1 to 4" begin
         ising_model = Dict((1,2) => -1, (1,) => 1/2, (2,) => -5/7)
         n = 2
         annealing_time = 2.0
@@ -42,11 +42,12 @@
             z_component = z_component + sum_z_tup(n, tup, w)
         end
 
+        H_parts = QuantumAnnealing._H_parts(x_component, z_component, order)
 
         a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
         b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
 
-        Ω_list1 = QuantumAnnealing._Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], x_component, z_component, order)
+        Ω_list1 = QuantumAnnealing._Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], H_parts, order)
 
         a_2_shift = a_2
         a_1_shift = a_1 + 2*a_2*s0
