@@ -312,7 +312,7 @@ end
 
 
 
-function simulate_o4(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
     end
@@ -706,7 +706,7 @@ two_spin_model = Dict((1,2) => 2)
 """
 an any-order magnus expansion solver with a fixed number of time steps
 """
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate_old(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
@@ -801,7 +801,7 @@ end
 """
 a convergence tolerance-based any-order magnus expansion solver
 """
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
+function simulate_old(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
     mean_delta = mean_tol + 1.0
     max_delta = max_tol + 1.0
@@ -966,7 +966,7 @@ end
 """
 an any-order magnus expansion solver with a fixed number of time steps
 """
-function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
@@ -1063,7 +1063,7 @@ end
 """
 a convergence tolerance-based any-order magnus expansion solver
 """
-function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
+function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
     mean_delta = mean_tol + 1.0
     max_delta = max_tol + 1.0
@@ -1073,7 +1073,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
         println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
     end
 
-    ρ_prev = simulate_tmp(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
+    ρ_prev = simulate(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
 
     iteration = 1
     while mean_delta >= mean_tol || max_delta >= max_tol
@@ -1083,7 +1083,7 @@ function simulate_tmp(ising_model::Dict, annealing_time::Real, annealing_schedul
             empty!(state_steps)
         end
 
-        ρ = simulate_tmp(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
+        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
 
         ρ_delta = abs.(ρ .- ρ_prev)
         mean_delta = sum(ρ_delta)/length(ρ_delta)

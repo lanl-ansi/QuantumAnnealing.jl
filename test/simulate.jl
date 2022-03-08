@@ -169,7 +169,7 @@ end
 
 
 @testset "simulate, any-order magnus expansion" begin
-    @testset "1 qubit, adaptive, orders 1 to 6" begin
+    @testset "1 qubit, adaptive, orders 1 to 8" begin
         at = 1.0
 
         ρ = simulate(one_spin_model, at, AS_CIRCULAR, 1, max_tol=1e-9, silence=true)
@@ -187,12 +187,17 @@ end
         ρ = simulate(one_spin_model, at, AS_CIRCULAR, 5, max_tol=1e-9, silence=true)
         @test isapprox(one_spin_ρ(at), ρ)
 
-        # note, this is time consuming (around 4.5 seconds)
         ρ = simulate(one_spin_model, at, AS_CIRCULAR, 6, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 7, max_tol=1e-9, silence=true)
+        @test isapprox(one_spin_ρ(at), ρ)
+
+        ρ = simulate(one_spin_model, at, AS_CIRCULAR, 8, max_tol=1e-9, silence=true)
         @test isapprox(one_spin_ρ(at), ρ)
     end
 
-    @testset "2 qubit, adaptive, orders 1 to 6" begin
+    @testset "2 qubit, adaptive, orders 1 to 8" begin
         at = 1.0
 
         ρ = simulate(two_spin_model, at, AS_CIRCULAR, 1, max_tol=1e-9, silence=true)
@@ -210,40 +215,45 @@ end
         ρ = simulate(two_spin_model, at, AS_CIRCULAR, 5, max_tol=1e-9, silence=true)
         @test isapprox(two_spin_ρ(at), ρ)
 
-        # note, this is time consuming (around 4.5 seconds)
         ρ = simulate(two_spin_model, at, AS_CIRCULAR, 6, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 7, max_tol=1e-9, silence=true)
+        @test isapprox(two_spin_ρ(at), ρ)
+
+        ρ = simulate(two_spin_model, at, AS_CIRCULAR, 8, max_tol=1e-9, silence=true)
         @test isapprox(two_spin_ρ(at), ρ)
     end
 
     @testset "5 qubit, hardcoded first order solver" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o1(ising_model, 2.0, AS_CIRCULAR, 4)
-        ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 4, 1)
+        ρ_target = simulate_o1(ising_model, 2.0, AS_CIRCULAR, 2)
+        ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, 1)
         @test isapprox(ρ_target, ρ)
     end
 
     @testset "5 qubit, hardcoded second order solver" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o2(ising_model, 2.0, AS_CIRCULAR, 4)
-        ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 4, 2)
+        ρ_target = simulate_o2(ising_model, 2.0, AS_CIRCULAR, 2)
+        ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, 2)
         @test isapprox(ρ_target, ρ)
     end
 
     @testset "5 qubit, hardcoded second order solver, function schedules" begin
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
-        ρ_target = simulate_o2(ising_model, 2.0, AS_LINEAR, 4)
-        ρ = simulate(ising_model, 2.0, AS_LINEAR, 4, 2)
+        ρ_target = simulate_o2(ising_model, 2.0, AS_LINEAR, 2)
+        ρ = simulate(ising_model, 2.0, AS_LINEAR, 2, 2)
         @test isapprox(ρ_target, ρ)
 
-        ρ_target = simulate_o2(ising_model, 2.0, AS_QUADRATIC, 4)
-        ρ = simulate(ising_model, 2.0, AS_QUADRATIC, 4, 2)
+        ρ_target = simulate_o2(ising_model, 2.0, AS_QUADRATIC, 2)
+        ρ = simulate(ising_model, 2.0, AS_QUADRATIC, 2, 2)
         @test isapprox(ρ_target, ρ)
 
-        ρ_target = simulate_o2(ising_model, 2.0, AS_DW_QUADRATIC, 4)
-        ρ = simulate(ising_model, 2.0, AS_DW_QUADRATIC, 4, 2)
+        ρ_target = simulate_o2(ising_model, 2.0, AS_DW_QUADRATIC, 2)
+        ρ = simulate(ising_model, 2.0, AS_DW_QUADRATIC, 2, 2)
         @test isapprox(ρ_target, ρ)
     end
 end
