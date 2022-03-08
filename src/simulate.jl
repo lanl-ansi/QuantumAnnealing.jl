@@ -137,90 +137,6 @@ function integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δ)
 end
 
 
-
-
-"""
-a first order magnus expansion solver with a fixed number of steps
-"""
-function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
-    if steps < 2
-        error("at least two steps are required by simulate, given $(steps)")
-    end
-
-    n = _check_ising_model_ids(ising_model)
-
-    if initial_state == nothing
-        initial_state = annealing_schedule.init_default(n)
-    end
-
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
-    track_states = !(state_steps == nothing)
-
-    t0 = 0
-    s0 = 0
-
-    R0 = initial_state * initial_state'
-
-    ηs = ones(n)
-    hs = zeros(n)
-
-    x_component = sum_x(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
-    end
-
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = _lie_bracket(x_component, constant_component)
-    constant_bracket_z = _lie_bracket(z_component, constant_component)
-
-    s_steps = range(0, 1, length=steps)
-    R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
-
-    if track_states
-        push!(state_steps, R_current)
-    end
-
-    for i in 1:(steps-1)
-        s0 = s_steps[i]
-        s1 = s_steps[i+1]
-        δs = s1 - s0
-
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        integA = integral_1_sched(a_2, a_1, a_0, s0, δs)
-        integB = integral_1_sched(b_2, b_1, b_0, s0, δs)
-        integ2 = integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δs)
-
-        integ2A = a_1*δs^3/6 + a_2*s0*δs^3/3 + a_2*δs^4/6
-        integ2B = b_1*δs^3/6 + b_2*s0*δs^3/3 + b_2*δs^4/6
-
-        Ω1Sched = integA * x_component + integB * z_component
-        Ω1Const = δs * constant_component
-        Ω1 = Ω1Sched + Ω1Const
-
-        U_next = exp(Matrix(-im * (annealing_time*Ω1)))
-        U = U_next * U
-
-        if track_states
-            R_current = U * R0 * U'
-            push!(state_steps, R_current)
-        end
-    end
-
-    return U * R0 * U'
-end
-
-
 """
 a second order magnus expansion solver with a fixed number of steps
 """
@@ -307,156 +223,6 @@ function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule
 
     return U * R0 * U'
 end
-
-
-function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
-    if steps < 2
-        error("at least two steps are required by simulate, given $(steps)")
-    end
-
-    n = _check_ising_model_ids(ising_model)
-
-    if initial_state == nothing
-        initial_state = annealing_schedule.init_default(n)
-    end
-
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
-    track_states = !(state_steps == nothing)
-
-    t0 = 0
-    s0 = 0
-
-    R0 = initial_state * initial_state'
-
-    ηs = ones(n)
-    hs = zeros(n)
-
-    x_component = sum_x(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
-    end
-
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = _lie_bracket(x_component, constant_component)
-    constant_bracket_z = _lie_bracket(z_component, constant_component)
-
-    s_steps = range(0, 1, length=steps)
-    R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
-
-    if track_states
-        push!(state_steps, R_current)
-    end
-
-    for i in 1:(steps-1)
-        s0 = s_steps[i]
-        s1 = s_steps[i+1]
-        δs = s1 - s0
-
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        Ω_list = _Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], x_component, z_component, 3)
-
-        #display(Matrix(Ω_list[1]))
-        #display(Matrix(Ω_list[2]))
-        #display(Matrix(Ω_list[3]))
-
-        U_next = exp(Matrix(sum(Ω_list)))
-        U = U_next * U
-
-        if track_states
-            R_current = U * R0 * U'
-            push!(state_steps, R_current)
-        end
-    end
-
-    return U * R0 * U'
-end
-
-
-function simulate_o4(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
-    if steps < 2
-        error("at least two steps are required by simulate, given $(steps)")
-    end
-
-    n = _check_ising_model_ids(ising_model)
-
-    if initial_state == nothing
-        initial_state = annealing_schedule.init_default(n)
-    end
-
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
-    track_states = !(state_steps == nothing)
-
-    t0 = 0
-    s0 = 0
-
-    R0 = initial_state * initial_state'
-
-    ηs = ones(n)
-    hs = zeros(n)
-
-    x_component = sum_x(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
-    end
-
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = _lie_bracket(x_component, constant_component)
-    constant_bracket_z = _lie_bracket(z_component, constant_component)
-
-    s_steps = range(0, 1, length=steps)
-    R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
-
-    if track_states
-        push!(state_steps, R_current)
-    end
-
-    for i in 1:(steps-1)
-        s0 = s_steps[i]
-        s1 = s_steps[i+1]
-        δs = s1 - s0
-
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        Ω_list = _Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], x_component, z_component, 4)
-
-        #display(Matrix(Ω_list[1]))
-        #display(Matrix(Ω_list[2]))
-        #display(Matrix(Ω_list[3]))
-        #display(Matrix(Ω_list[4]))
-
-        U_next = exp(Matrix(sum(Ω_list)))
-        U = U_next * U
-
-        if track_states
-            R_current = U * R0 * U'
-            push!(state_steps, R_current)
-        end
-    end
-
-    return U * R0 * U'
-end
-
 
 
 function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
@@ -704,7 +470,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
     end
 
-    ρ_prev = simulate_o2(ising_model, annealing_time, annealing_schedule, steps; kwargs...)
+    ρ_prev = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, 4; kwargs...)
 
     iteration = 1
     while mean_delta >= mean_tol || max_delta >= max_tol
@@ -714,7 +480,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
             empty!(state_steps)
         end
 
-        ρ = simulate_o2(ising_model, annealing_time, annealing_schedule, steps; state_steps=state_steps, kwargs...)
+        ρ = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, 4; state_steps=state_steps, kwargs...)
 
         ρ_delta = abs.(ρ .- ρ_prev)
         mean_delta = sum(ρ_delta)/length(ρ_delta)
