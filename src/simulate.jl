@@ -177,8 +177,6 @@ function simulate_o1(ising_model::Dict, annealing_time::Real, annealing_schedule
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    xz_bracket = _lie_bracket(x_component, z_component)
-
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
     constant_bracket_x = _lie_bracket(x_component, constant_component)
     constant_bracket_z = _lie_bracket(z_component, constant_component)
@@ -347,8 +345,6 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    xz_bracket = _lie_bracket(x_component, z_component)
-
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
     constant_bracket_x = _lie_bracket(x_component, constant_component)
     constant_bracket_z = _lie_bracket(z_component, constant_component)
@@ -369,48 +365,14 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
         b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
 
-        a_2_shift = a_2
-        a_1_shift = a_1 + 2*a_2*s0
-        a_0_shift = a_0 + a_1*s0 + a_2*s0^2
+        Ω_list = _Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], x_component, z_component, 3)
 
-        b_2_shift = b_2
-        b_1_shift = b_1 + 2*b_2*s0
-        b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+        #display(Matrix(Ω_list[1]))
+        #display(Matrix(Ω_list[2]))
+        #display(Matrix(Ω_list[3]))
+        #display(Matrix(Ω_list[4]))
 
-        a_2_shift2 = δs^2*a_2_shift
-        a_1_shift2 = δs*a_1_shift
-        a_0_shift2 = a_0_shift
-
-        b_2_shift2 = δs^2*b_2_shift
-        b_1_shift2 = δs*b_1_shift
-        b_0_shift2 = b_0_shift
-
-        Q21 = _lie_bracket(x_component, z_component)
-        Q31 = _lie_bracket(x_component, Q21)
-        Q32 = _lie_bracket(Q21, z_component)
-        Q41 = _lie_bracket(x_component, Q31)
-        Q42 = _lie_bracket(x_component, Q32)
-        Q43 = _lie_bracket(z_component, Q32)
-
-        a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
-        b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
-
-        δst = δs*annealing_time
-        Ω1 = -im*δst*(_int1(a_vec)*x_component + _int1(b_vec)*z_component)
-        Ω2 = -im*δst^2/2*(_int21(a_vec,b_vec)*Q21)
-        Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*Q31 + _int31(b_vec,a_vec)*Q32)
-        #Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*Q41 + _int42(a_vec,b_vec)*Q42 + _int41(b_vec,a_vec)*Q43)
-
-        #display(Matrix(Ω1))
-        #display(Matrix(Ω2))
-        #display(Matrix(Ω3))
-        #display(Matrix(Ω4))
-
-        #U_next = exp(Matrix(Ω1))
-        #U_next = exp(Matrix(Ω1 + Ω2))
-        U_next = exp(Matrix(Ω1 + Ω2 + Ω3))
-        #U_next = exp(Matrix(Ω1 + Ω2 + Ω3 + Ω4))
-
+        U_next = exp(Matrix(sum(Ω_list)))
         U = U_next * U
 
         if track_states
@@ -475,6 +437,50 @@ function _int42(u::Vector, v::Vector)
         2/315*u[1]*u[3]*v[3]^2 + 1/792*u[2]*u[3]*v[3]^2
 end
 =#
+
+function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients, b_coefficients, x_component, z_component, order::Int)
+    @assert(1 <= order && order <= 3)
+    δs = s1 - s0
+    δst = annealing_time*δs
+
+    a_2, a_1, a_0 = a_coefficients
+    b_2, b_1, b_0 = b_coefficients
+
+    a_2_shift = a_2
+    a_1_shift = a_1 + 2*a_2*s0
+    a_0_shift = a_0 + a_1*s0 + a_2*s0^2
+
+    b_2_shift = b_2
+    b_1_shift = b_1 + 2*b_2*s0
+    b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+
+    a_2_shift2 = δs^2*a_2_shift
+    a_1_shift2 = δs*a_1_shift
+    a_0_shift2 = a_0_shift
+
+    b_2_shift2 = δs^2*b_2_shift
+    b_1_shift2 = δs*b_1_shift
+    b_0_shift2 = b_0_shift
+
+    Q21 = _lie_bracket(x_component, z_component)
+    Q31 = _lie_bracket(x_component, Q21)
+    Q32 = _lie_bracket(Q21, z_component)
+    Q41 = _lie_bracket(x_component, Q31)
+    Q42 = _lie_bracket(x_component, Q32)
+    Q43 = _lie_bracket(z_component, Q32)
+
+    a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
+    b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
+
+    Ω1 = -im*δst*(_int1(a_vec)*x_component + _int1(b_vec)*z_component)
+    Ω2 = -im*δst^2/2*(_int21(a_vec,b_vec)*Q21)
+    Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*Q31 + _int31(b_vec,a_vec)*Q32)
+    #Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*Q41 + _int42(a_vec,b_vec)*Q42 + _int41(b_vec,a_vec)*Q43)
+
+    Ω_list = [Ω1, Ω2, Ω3]
+
+    return Ω_list[1:order]
+end
 
 
 """
@@ -689,8 +695,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
     for (tup,w) in ising_model
         z_component = z_component + sum_z_tup(n, tup, w)
     end
-
-    xz_bracket = _lie_bracket(x_component, z_component)
 
     constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
     constant_bracket_x = _lie_bracket(x_component, constant_component)
