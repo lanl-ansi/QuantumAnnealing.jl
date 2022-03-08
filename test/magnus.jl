@@ -30,7 +30,7 @@
         n = 2
         annealing_time = 2.0
         annealing_schedule = AS_LINEAR
-        order = 3
+        order = 4
 
         s0 = 0.0
         s1 = 1.0

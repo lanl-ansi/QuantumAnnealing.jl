@@ -309,7 +309,6 @@ function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule
 end
 
 
-
 function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
@@ -370,6 +369,80 @@ function simulate_o3(ising_model::Dict, annealing_time::Real, annealing_schedule
         #display(Matrix(Ω_list[1]))
         #display(Matrix(Ω_list[2]))
         #display(Matrix(Ω_list[3]))
+
+        U_next = exp(Matrix(sum(Ω_list)))
+        U = U_next * U
+
+        if track_states
+            R_current = U * R0 * U'
+            push!(state_steps, R_current)
+        end
+    end
+
+    return U * R0 * U'
+end
+
+
+function simulate_o4(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+    if steps < 2
+        error("at least two steps are required by simulate, given $(steps)")
+    end
+
+    n = _check_ising_model_ids(ising_model)
+
+    if initial_state == nothing
+        initial_state = annealing_schedule.init_default(n)
+    end
+
+    if constant_field_x == nothing
+        constant_field_x = zeros(n)
+    end
+
+    if constant_field_z == nothing
+        constant_field_z = zeros(n)
+    end
+
+    track_states = !(state_steps == nothing)
+
+    t0 = 0
+    s0 = 0
+
+    R0 = initial_state * initial_state'
+
+    ηs = ones(n)
+    hs = zeros(n)
+
+    x_component = sum_x(n)
+    z_component = SparseArrays.spzeros(2^n, 2^n)
+    for (tup,w) in ising_model
+        z_component = z_component + sum_z_tup(n, tup, w)
+    end
+
+    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
+    constant_bracket_x = _lie_bracket(x_component, constant_component)
+    constant_bracket_z = _lie_bracket(z_component, constant_component)
+
+    s_steps = range(0, 1, length=steps)
+    R_current = R0
+    U = foldl(kron, [IMAT for i = 1:n])
+
+    if track_states
+        push!(state_steps, R_current)
+    end
+
+    for i in 1:(steps-1)
+        s0 = s_steps[i]
+        s1 = s_steps[i+1]
+        δs = s1 - s0
+
+        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
+        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
+
+        Ω_list = _Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], x_component, z_component, 4)
+
+        #display(Matrix(Ω_list[1]))
+        #display(Matrix(Ω_list[2]))
+        #display(Matrix(Ω_list[3]))
         #display(Matrix(Ω_list[4]))
 
         U_next = exp(Matrix(sum(Ω_list)))
@@ -402,44 +475,43 @@ function _int31(u::Vector, v::Vector)
         1/360*u[2]*u[3]*v[3]
 end
 
-#=
 function _int41(u::Vector, v::Vector)
-    return -(1/40)*u[1]^2*u[2]*v[1] - 7/240*u[1]*u[2]^2*v[1] - 
-        1/140*u[2]^3*v[1] - 1/45*u[1]^2*u[3]*v[1] - 
-        41/840*u[1]*u[2]*u[3]*v[1] - 1/60*u[2]^2*u[3]*v[1] - 
-        13/630*u[1]*u[3]^2*v[1] - (29*u[2]*u[3]^2*v[1])/2268 - 
-        1/315*u[3]^3*v[1] + 1/40*u[1]^3*v[2] + 7/240*u[1]^2*u[2]*v[2] + 
-        1/140*u[1]*u[2]^2*v[2] + 1/56*u[1]^2*u[3]*v[2] + 
-        1/210*u[1]*u[2]*u[3]*v[2] - 1/756*u[2]^2*u[3]*v[2] - (
-        u[1]*u[3]^2*v[2])/1296 - (19*u[2]*u[3]^2*v[2])/10080 - (
-        u[3]^3*v[2])/1584 + 1/45*u[1]^3*v[3] + 13/420*u[1]^2*u[2]*v[3] + 
-        1/84*u[1]*u[2]^2*v[3] + 1/756*u[2]^3*v[3] + 
-        13/630*u[1]^2*u[3]*v[3] + (41*u[1]*u[2]*u[3]*v[3])/3024 + (
-        19*u[2]^2*u[3]*v[3])/10080 + 1/315*u[1]*u[3]^2*v[3] + (
-        u[2]*u[3]^2*v[3])/1584
+    return -(1/120)*u[1]^2*u[2]*v[1]-1/120*u[1]*u[2]^2*v[1] -
+        1/840*u[2]^3*v[1]-1/120*u[1]^2*u[3]*v[1] -
+        (19*u[1]*u[2]*u[3]*v[1])/1260-1/360*u[2]^2*u[3]*v[1]-
+        (17*u[1]*u[3]^2*v[1])/2520-1/504*u[2]*u[3]^2*v[1]-
+        (u[3]^3*v[1])/2520+1/120*u[1]^3*v[2]+1/120*u[1]^2*u[2]*v[2]+
+        1/840*u[1]*u[2]^2*v[2]+(11*u[1]^2*u[3]*v[2])/2520-
+        (u[1]*u[2]*u[3]*v[2])/1260-(u[2]^2*u[3]*v[2])/2520-
+        1/720*u[1]*u[3]^2*v[2]-(u[2]*u[3]^2*v[2])/2016-
+        (u[3]^3*v[2])/7920+1/120*u[1]^3*v[3]+3/280*u[1]^2*u[2]*v[3]+
+        1/280*u[1]*u[2]^2*v[3]+(u[2]^3*v[3])/2520+
+        (17*u[1]^2*u[3]*v[3])/2520+(17*u[1]*u[2]*u[3]*v[3])/5040+
+        (u[2]^2*u[3]*v[3])/2016+(u[1]*u[3]^2*v[3])/2520+
+        (u[2]*u[3]^2*v[3])/7920
 end
 
 function _int42(u::Vector, v::Vector)
-    return -(1/20)*u[1]*u[2]*v[1]^2 - 7/240*u[2]^2*v[1]^2 - 
-        2/45*u[1]*u[3]*v[1]^2 - 41/840*u[2]*u[3]*v[1]^2 - 
-        13/630*u[3]^2*v[1]^2 + 1/20*u[1]^2*v[1]*v[2] - 
-        1/70*u[2]^2*v[1]*v[2] - 11/840*u[1]*u[3]*v[1]*v[2] - 
-        1/35*u[2]*u[3]*v[1]*v[2] - (41*u[3]^2*v[1]*v[2])/3024 + 
-        7/240*u[1]^2*v[2]^2 + 1/70*u[1]*u[2]*v[2]^2 + 
-        1/210*u[1]*u[3]*v[2]^2 - 1/378*u[2]*u[3]*v[2]^2 -
-        (19*u[3]^2*v[2]^2)/10080 + 2/45*u[1]^2*v[1]*v[3] + 
-        11/840*u[1]*u[2]*v[1]*v[3] - 1/210*u[2]^2*v[1]*v[3] -
-        (109*u[2]*u[3]*v[1]*v[3])/9072 - 2/315*u[3]^2*v[1]*v[3] + 
-        41/840*u[1]^2*v[2]*v[3] + 1/35*u[1]*u[2]*v[2]*v[3] + 
-        1/378*u[2]^2*v[2]*v[3] + (109*u[1]*u[3]*v[2]*v[3])/9072 - 
-        1/792*u[3]^2*v[2]*v[3] + 13/630*u[1]^2*v[3]^2 +
-        (41*u[1]*u[2]*v[3]^2)/3024 + (19*u[2]^2*v[3]^2)/10080 + 
-        2/315*u[1]*u[3]*v[3]^2 + 1/792*u[2]*u[3]*v[3]^2
+    return 1/60*u[1]*u[2]*v[1]^2+1/120*u[2]^2*v[1]^2+
+        1/60*u[1]*u[3]*v[1]^2+(19*u[2]*u[3]*v[1]^2)/1260+
+        (17*u[3]^2*v[1]^2)/2520-1/60*u[1]^2*v[1]*v[2]+
+        1/420*u[2]^2*v[1]*v[2]+2/315*u[1]*u[3]*v[1]*v[2]+
+        2/315*u[2]*u[3]*v[1]*v[2]+(17*u[3]^2*v[1]*v[2])/5040-
+        1/120*u[1]^2*v[2]^2-1/420*u[1]*u[2]*v[2]^2+
+        (u[1]*u[3]*v[2]^2)/1260+(u[2]*u[3]*v[2]^2)/1260+
+        (u[3]^2*v[2]^2)/2016-1/60*u[1]^2*v[1]*v[3]-
+        2/315*u[1]*u[2]*v[1]*v[3]-(u[2]^2*v[1]*v[3])/1260+
+        (u[2]*u[3]*v[1]*v[3])/1680+(u[3]^2*v[1]*v[3])/1260-
+        (19*u[1]^2*v[2]*v[3])/1260-2/315*u[1]*u[2]*v[2]*v[3]-
+        (u[2]^2*v[2]*v[3])/1260-(u[1]*u[3]*v[2]*v[3])/1680+
+        (u[3]^2*v[2]*v[3])/3960-(17*u[1]^2*v[3]^2)/2520-
+        (17*u[1]*u[2]*v[3]^2)/5040-(u[2]^2*v[3]^2)/2016-
+        (u[1]*u[3]*v[3]^2)/1260-(u[2]*u[3]*v[3]^2)/3960
 end
-=#
+
 
 function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients, b_coefficients, x_component, z_component, order::Int)
-    @assert(1 <= order && order <= 3)
+    @assert(1 <= order && order <= 4)
     δs = s1 - s0
     δst = annealing_time*δs
 
@@ -475,9 +547,9 @@ function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients, b_co
     Ω1 = -im*δst*(_int1(a_vec)*x_component + _int1(b_vec)*z_component)
     Ω2 = -im*δst^2/2*(_int21(a_vec,b_vec)*Q21)
     Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*Q31 + _int31(b_vec,a_vec)*Q32)
-    #Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*Q41 + _int42(a_vec,b_vec)*Q42 + _int41(b_vec,a_vec)*Q43)
+    Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*Q41 + _int42(a_vec,b_vec)*Q42 + _int41(b_vec,a_vec)*Q43)
 
-    Ω_list = [Ω1, Ω2, Ω3]
+    Ω_list = [Ω1, Ω2, Ω3, Ω4]
 
     return Ω_list[1:order]
 end
