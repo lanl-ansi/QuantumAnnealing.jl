@@ -501,9 +501,9 @@ end
 @testset "simulate bqpjson" begin
 
     @testset "1 qubit, function schedule" begin
-        annealing_time = 10000.0
+        annealing_time = 1000.0
         annealing_schedule = AS_CIRCULAR
-        steps = 1000
+        steps = 2500
 
         ising_intended = Dict((1,) => 1)
 
@@ -515,7 +515,7 @@ end
         dwisc_data = JSON.parsefile(dwisc_file)
         rm(dwisc_file)
 
-        ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 2)
+        ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 4)
 
         @test dwisc_data["solutions"][1]["prob"] >= 0.99
         @test isapprox(z_measure_probabilities(ρ)[2], dwisc_data["solutions"][1]["prob"])
@@ -523,9 +523,9 @@ end
     end
 
     @testset "1 qubit, dwave schedule" begin
-        annealing_time = 10000.0
+        annealing_time = 1000.0
         annealing_schedule = AS_DW_QUADRATIC
-        steps = 1000
+        steps = 32000
 
         ising_intended = Dict((1,) => 1)
 
@@ -537,7 +537,9 @@ end
         dwisc_data = JSON.parsefile(dwisc_file)
         rm(dwisc_file)
 
-        ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 2)
+        ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 4)
+
+        println(dwisc_data["solutions"])
 
         @test dwisc_data["solutions"][1]["prob"] >= 0.99
         @test isapprox(z_measure_probabilities(ρ)[2], dwisc_data["solutions"][1]["prob"])
@@ -545,9 +547,9 @@ end
     end
 
     @testset "2 qubit, function schedule" begin
-        annealing_time = 10000.0
+        annealing_time = 1000.0
         annealing_schedule = AS_CIRCULAR
-        steps = 1000
+        steps = 5000
 
         # the ising model that is encoded in bqpjson_2q.json
         ising_intended = Dict((1,) => -1, (2,) => -1, (1,2) => -1)
@@ -560,7 +562,7 @@ end
         dwisc_data = JSON.parsefile(dwisc_file)
         rm(dwisc_file)
 
-        ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 2)
+        ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 4)
 
         @test dwisc_data["solutions"][1]["prob"] >= 0.99
         @test isapprox(z_measure_probabilities(ρ)[1], dwisc_data["solutions"][1]["prob"])

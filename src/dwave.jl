@@ -189,14 +189,14 @@ end
 """
 function that allows for simulation from a bqpjson data file
 """
-function simulate_bqpjson(infile, outfile, annealing_time, annealing_schedule, steps; simulated_num_reads=1e17, scale=1.0)
+function simulate_bqpjson(infile, outfile, annealing_time, annealing_schedule, steps; order=4, simulated_num_reads=1e17, scale=1.0)
     ising_model, qubit_ids = read_bqpjson(infile)
     n = length(qubit_ids)
     for (k,v) in ising_model
         ising_model[k] = v*scale
     end
 
-    ρ = simulate_o2(ising_model, annealing_time, annealing_schedule, steps)
+    ρ = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, order)
 
     write_dwisc(outfile, ρ, ising_model, qubit_ids, simulated_num_reads=simulated_num_reads, annealing_time=annealing_time)
 end
@@ -206,7 +206,7 @@ end
 function that allows for simulation with x and z noise from a bqpjson data file.
 The `x_bias` and `z_bias` parameters provide vectors of noise realizations.
 """
-function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_schedule, steps; simulated_num_reads=1e17, scale=1.0, x_bias::Vector{<:Any}=[], z_bias::Vector{<:Any}=[])
+function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_schedule, steps; order=4, simulated_num_reads=1e17, scale=1.0, x_bias::Vector{<:Any}=[], z_bias::Vector{<:Any}=[])
     if length(x_bias) > 0 && length(z_bias) > 0 && length(x_bias) != length(z_bias)
         error("x_bias and z_bias require the same number of parameters given, $(length(x_bias)) and $(length(z_bias)) respectively")
     end
@@ -233,7 +233,7 @@ function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_sched
         x_field = x_bias[shot]
         z_field = z_bias[shot]
 
-        ρ = simulate_o2(ising_model, annealing_time, annealing_schedule, steps, constant_field_x=[x_field], constant_field_z=[z_field])
+        ρ = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, order, constant_field_x=[x_field], constant_field_z=[z_field])
 
         accumulator = accumulator + ρ
     end
