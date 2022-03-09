@@ -33,52 +33,36 @@ function _lie_bracket(A, B)
     return -im * (A*B - B*A)
 end
 
-function tensor_sum_single_qubit(mat, n::Int)
+function _tensor_sum_single_qubit(mat, n::Int)
     return sum([foldl(kron,[j == i ? mat : IMAT for i in n:-1:1]) for j in 1:n])
 end
 
-function tensor_sum_single_qubit(mat, n::Int, weights::Vector)
+function _tensor_sum_single_qubit(mat, n::Int, weights::Vector)
     return sum([foldl(kron,[j == i ? weights[j] * mat : IMAT for i in n:-1:1]) for j in 1:n])
 end
 
 function sum_x(n::Int)
-    return tensor_sum_single_qubit(XMAT, n)
+    return _tensor_sum_single_qubit(XMAT, n)
 end
 
 function sum_x(n::Int, w::Vector)
-    return tensor_sum_single_qubit(XMAT, n, w)
+    return _tensor_sum_single_qubit(XMAT, n, w)
 end
 
 function sum_y(n::Int)
-    return tensor_sum_single_qubit(YMAT, n)
+    return _tensor_sum_single_qubit(YMAT, n)
 end
 
 function sum_y(n::Int, w::Vector)
-    return tensor_sum_single_qubit(YMAT, n, w)
+    return _tensor_sum_single_qubit(YMAT, n, w)
 end
 
 function sum_z(n::Int)
-    return tensor_sum_single_qubit(ZMAT, n)
+    return _tensor_sum_single_qubit(ZMAT, n)
 end
 
 function sum_z(n::Int, w::Vector)
-    return tensor_sum_single_qubit(ZMAT, n, w)
-end
-
-function zizj_vectorized(n::Int, i::Int, j::Int, J_val)
-    Ivec = [1.0+0im,1.0+0im]
-    Zvec = [1.0+0im,-1.0+0im]
-    matvec = [(k == i || k == j) ? Zvec : Ivec for k in n:-1:1]
-    return J_val * foldl(kron, matvec)
-end
-
-function sum_zizj(n, J::Dict)
-    sum_zs = zeros(2^n)
-    for (i,j) in keys(J)
-        J_val = J[(i,j)]
-        sum_zs +=  zizj_vectorized(n, i, j, J_val)
-    end
-    return SparseArrays.spdiagm(sum_zs)
+    return _tensor_sum_single_qubit(ZMAT, n, w)
 end
 
 function sum_z_tup(n, tup, w)
@@ -113,119 +97,7 @@ function transverse_ising_hamiltonian(ising_model::Dict, annealing_schedule::Ann
 end
 
 
-function integral_1_sched(a_2, a_1, a_0, s0, δ)
-    #TODO: Possibly change to integrate from s0 to s1 to allow
-    #      for a more fine-grained integration with As and Bs
-    #      from spline
-    #δ = s1 - s0
-    left = [(2*(3*s0^2+3*s0*δ+δ^2)) (3*(2*s0+δ)) 6] * δ / 6
-    right = [a_2, a_1, a_0]
-    return (left * right)[1]
-end
-
-function integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δ)
-    #TODO: see integral_1_sched todo.
-    #returns the magnus expansions double integral for 
-    #(A(s1)B(s2) - A(s2)B(s1))
-    #δ = s0 - s1
-    left = [a_2 a_1 a_0]
-    right = [b_2,b_1,b_0]
-    integ_mat = [(0) (s0^2 + s0*δ + δ^2/5) (2*s0 + δ);
-                 (-(s0^2 + s0*δ + δ^2/5)) (0) (1);
-                 -(2*s0+δ) (-1) (0)] * δ^3 / 6
-    return (left * integ_mat * right)[1]
-end
-
-
-"""
-a second order magnus expansion solver with a fixed number of steps
-"""
-function simulate_o2(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
-    if steps < 2
-        error("at least two steps are required by simulate, given $(steps)")
-    end
-
-    n = _check_ising_model_ids(ising_model)
-
-    if initial_state == nothing
-        initial_state = annealing_schedule.init_default(n)
-    end
-
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
-    track_states = !(state_steps == nothing)
-
-    t0 = 0
-    s0 = 0
-
-    R0 = initial_state * initial_state'
-
-    ηs = ones(n)
-    hs = zeros(n)
-
-    x_component = sum_x(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
-    end
-
-    xz_bracket = _lie_bracket(x_component, z_component)
-
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = _lie_bracket(x_component, constant_component)
-    constant_bracket_z = _lie_bracket(z_component, constant_component)
-
-    s_steps = range(0, 1, length=steps)
-    R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
-
-    if track_states
-        push!(state_steps, R_current)
-    end
-
-    for i in 1:(steps-1)
-        s0 = s_steps[i]
-        s1 = s_steps[i+1]
-        δs = s1 - s0
-
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        integA = integral_1_sched(a_2, a_1, a_0, s0, δs)
-        integB = integral_1_sched(b_2, b_1, b_0, s0, δs)
-        integ2 = integral_2_sched(a_2, a_1, a_0, b_2, b_1, b_0, s0, δs)
-
-        integ2A = a_1*δs^3/6 + a_2*s0*δs^3/3 + a_2*δs^4/6
-        integ2B = b_1*δs^3/6 + b_2*s0*δs^3/3 + b_2*δs^4/6
-
-        Ω1Sched = integA * x_component + integB * z_component
-        Ω1Const = δs * constant_component
-        Ω1 = Ω1Sched + Ω1Const
-
-        Ω2Sched = integ2 * xz_bracket 
-        Ω2Const = integ2A * constant_bracket_x + integ2B * constant_bracket_z
-        Ω2 = (Ω2Sched + Ω2Const)/2
-
-        U_next = exp(Matrix(-im * (annealing_time*Ω1 + (annealing_time^2)*Ω2)))
-        U = U_next * U
-
-        if track_states
-            R_current = U * R0 * U'
-            push!(state_steps, R_current)
-        end
-    end
-
-    return U * R0 * U'
-end
-
-
-function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, state_steps=nothing)
     if steps < 2
         error("at least two steps are required by simulate_fixed_order, given $(steps)")
     end
@@ -239,14 +111,6 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
         initial_state = annealing_schedule.init_default(n)
     end
 
-    if constant_field_x == nothing
-        constant_field_x = zeros(n)
-    end
-
-    if constant_field_z == nothing
-        constant_field_z = zeros(n)
-    end
-
     track_states = !(state_steps == nothing)
 
     t0 = 0
@@ -262,10 +126,6 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
     for (tup,w) in ising_model
         z_component = z_component + sum_z_tup(n, tup, w)
     end
-
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = _lie_bracket(x_component, constant_component)
-    constant_bracket_z = _lie_bracket(z_component, constant_component)
 
     H_parts = _H_parts(x_component, z_component, order)
 
@@ -303,8 +163,6 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
 
     return U * R0 * U'
 end
-
-
 
 
 function _H_parts(x_component, z_component, order::Int)
@@ -355,13 +213,6 @@ function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients::Vect
     b_2_shift2 = δs^2*b_2_shift
     b_1_shift2 = δs*b_1_shift
     b_0_shift2 = b_0_shift
-
-    # Q21 = _lie_bracket(x_component, z_component)
-    # Q31 = _lie_bracket(x_component, Q21)
-    # Q32 = _lie_bracket(Q21, z_component)
-    # Q41 = _lie_bracket(x_component, Q31)
-    # Q42 = _lie_bracket(x_component, Q32)
-    # Q43 = _lie_bracket(z_component, Q32)
 
     a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
     b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
@@ -655,10 +506,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         z_component = z_component + sum_z_tup(n, tup, w)
     end
 
-    constant_component = sum_x(n, constant_field_x) + sum_z(n, constant_field_z)
-    constant_bracket_x = _lie_bracket(x_component, constant_component)
-    constant_bracket_z = _lie_bracket(z_component, constant_component)
-
     s_steps = range(0, 1, length=steps)
     R_current = R0
     U = foldl(kron, [IMAT for i = 1:n])
@@ -684,8 +531,11 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         b_1_shift = b_1 + 2*b_2*s0
         b_0_shift = b_0 + b_1*s0 + b_2*s0^2
 
+        constant_x = sum_x(n, constant_field_x)
+        constant_z = sum_z(n, constant_field_z)
+
         H = -im*annealing_time*[
-            a_0_shift * x_component + b_0_shift * z_component,
+            a_0_shift * x_component + b_0_shift * z_component + constant_x + constant_z,
             a_1_shift * x_component + b_1_shift * z_component,
             a_2_shift * x_component + b_2_shift * z_component,
         ]

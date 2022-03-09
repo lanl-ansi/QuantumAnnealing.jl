@@ -71,3 +71,20 @@ AS_CIRCULAR_pwl_csv_1000 = parse_dwave_annealing_schedule("data/trig_sched_1000.
 AS_CIRCULAR_pwq_csv_100 = parse_dwave_annealing_schedule("data/trig_sched_100.csv", interpolation=:quadratic, initial_state=default_initial_state)
 AS_CIRCULAR_pwq_csv_1000 = parse_dwave_annealing_schedule("data/trig_sched_1000.csv", interpolation=:quadratic, initial_state=default_initial_state)
 
+
+function sum_zizj(n, J::Dict)
+    sum_zs = zeros(2^n)
+    for (i,j) in keys(J)
+        J_val = J[(i,j)]
+        sum_zs += zizj_vectorized(n, i, j, J_val)
+    end
+    return diagm(sum_zs)
+end
+
+function zizj_vectorized(n::Int, i::Int, j::Int, J_val)
+    Ivec = [1.0+0im,1.0+0im]
+    Zvec = [1.0+0im,-1.0+0im]
+    matvec = [(k == i || k == j) ? Zvec : Ivec for k in n:-1:1]
+    return J_val * foldl(kron, matvec)
+end
+

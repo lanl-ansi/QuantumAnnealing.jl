@@ -38,7 +38,7 @@
 
     @testset "function schedule, constant terms" begin
         ρ_target = [0.0578906+1.38778e-17im -0.165069-0.165202im; -0.165069+0.165202im 0.942109+0.0im]
-        ρ = simulate_o2(one_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x = [1], constant_field_z = [1])
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, 2, constant_field_x = [1], constant_field_z = [1])
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
@@ -455,7 +455,7 @@ end
     end
 
     @testset "1 qubit, function schedule, constant terms" begin
-        ρ = simulate_o2(one_spin_model, 1.0, AS_CIRCULAR, 100, constant_field_x=[1], constant_field_z=[1])
+        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, 2, constant_field_x=[1], constant_field_z=[1])
         ρ_de = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
 
         @test isapprox(ρ, ρ_de, atol=1e-8)
@@ -538,8 +538,6 @@ end
         rm(dwisc_file)
 
         ρ = simulate_fixed_order(ising_intended, annealing_time, annealing_schedule, steps, 4)
-
-        println(dwisc_data["solutions"])
 
         @test dwisc_data["solutions"][1]["prob"] >= 0.99
         @test isapprox(z_measure_probabilities(ρ)[2], dwisc_data["solutions"][1]["prob"])
