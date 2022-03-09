@@ -38,7 +38,7 @@
 
     @testset "function schedule, constant terms" begin
         ρ_target = [0.0578906+1.38778e-17im -0.165069-0.165202im; -0.165069+0.165202im 0.942109+0.0im]
-        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, 2, constant_field_x = [1], constant_field_z = [1])
+        ρ = simulate_flexible_order(one_spin_model, 1.0, AS_CIRCULAR, 100, 2, constant_field_x = [1], constant_field_z = [1])
 
         # NOTE, atol required due to too few digits in target
         @test isapprox(ρ_target, ρ, atol=1e-6)
@@ -171,14 +171,14 @@ end
 @testset "simulate, any-order magnus expansion" begin
     @testset "1 qubit, adaptive, orders 1 to 8" begin
         for i in 1:8
-            ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, i, max_tol=1e-9, silence=true)
+            ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, order=i, max_tol=1e-9, silence=true)
             @test isapprox(one_spin_ρ(1.0), ρ)
         end
     end
 
     @testset "2 qubit, adaptive, orders 1 to 8" begin
         for i in 1:8
-            ρ = simulate(two_spin_model, 1.0, AS_CIRCULAR, i, max_tol=1e-9, silence=true)
+            ρ = simulate(two_spin_model, 1.0, AS_CIRCULAR, order=i, max_tol=1e-9, silence=true)
             @test isapprox(two_spin_ρ(1.0), ρ)
         end
     end
@@ -188,7 +188,7 @@ end
 
         for i in 1:4
             ρ_target = simulate_fixed_order(ising_model, 2.0, AS_CIRCULAR, 2, i)
-            ρ = simulate(ising_model, 2.0, AS_CIRCULAR, 2, i)
+            ρ = simulate_flexible_order(ising_model, 2.0, AS_CIRCULAR, 2, i)
             @test isapprox(ρ_target, ρ)
         end
 
@@ -198,15 +198,15 @@ end
         ising_model = Dict((1,) => -1, (1,2) => -1, (1,3) => -1, (1,4) => -1, (1,5) => -1, (2,3) => 1, (4,5) => 1)
 
         ρ_target = simulate_fixed_order(ising_model, 2.0, AS_LINEAR, 2, 4)
-        ρ = simulate(ising_model, 2.0, AS_LINEAR, 2, 4)
+        ρ = simulate_flexible_order(ising_model, 2.0, AS_LINEAR, 2, 4)
         @test isapprox(ρ_target, ρ)
 
         ρ_target = simulate_fixed_order(ising_model, 2.0, AS_QUADRATIC, 2, 4)
-        ρ = simulate(ising_model, 2.0, AS_QUADRATIC, 2, 4)
+        ρ = simulate_flexible_order(ising_model, 2.0, AS_QUADRATIC, 2, 4)
         @test isapprox(ρ_target, ρ)
 
         ρ_target = simulate_fixed_order(ising_model, 2.0, AS_DW_QUADRATIC, 2, 4)
-        ρ = simulate(ising_model, 2.0, AS_DW_QUADRATIC, 2, 4)
+        ρ = simulate_flexible_order(ising_model, 2.0, AS_DW_QUADRATIC, 2, 4)
         @test isapprox(ρ_target, ρ)
     end
 end
@@ -455,7 +455,7 @@ end
     end
 
     @testset "1 qubit, function schedule, constant terms" begin
-        ρ = simulate(one_spin_model, 1.0, AS_CIRCULAR, 100, 2, constant_field_x=[1], constant_field_z=[1])
+        ρ = simulate_flexible_order(one_spin_model, 1.0, AS_CIRCULAR, 100, 2, constant_field_x=[1], constant_field_z=[1])
         ρ_de = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
 
         @test isapprox(ρ, ρ_de, atol=1e-8)

@@ -293,76 +293,6 @@ function _int42(u::Vector, v::Vector)
 end
 
 
-"""
-Main function for performing quantum annealing simulation via a Magnus Expansion (second order).
-Noise can be simulated by running multiple times with randomized constant fields.
-
-Arguments:
-ising_model - ising model represented as a dictionary.  The qubits
-              and couplings are represented as tuples, and the weights
-              are numbers.
-              For Example: im = Dict((1,) => 1, (2,) => 0.5, (1,2) => 2)
-annealing_schedule - The annealing schedule, of the form given by the struct
-
-Parameters:
-initial_state - Initial state vector. Defaults to uniform superposition state on n qubits
-constant_field_x - vector of constant biases in the X basis on each qubit. Default is zeros(n)
-constant_field_z - vector of constant biases in the Z basis on each qubit. Default is zeros(n)
-The parameters `mean_tol` and `max_tol` specify the desired simulation accuracy.
-The `silence` parameter can be used to suppress the progress log.
-"""
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
-    start_time = time()
-    mean_delta = mean_tol + 1.0
-    max_delta = max_tol + 1.0
-
-    if !silence
-        println()
-        println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
-    end
-
-    ρ_prev = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, 4; kwargs...)
-
-    iteration = 1
-    while mean_delta >= mean_tol || max_delta >= max_tol
-        steps *= 2
-
-        if state_steps != nothing
-            empty!(state_steps)
-        end
-
-        ρ = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, 4; state_steps=state_steps, kwargs...)
-
-        ρ_delta = abs.(ρ .- ρ_prev)
-        mean_delta = sum(ρ_delta)/length(ρ_delta)
-        max_delta = maximum(ρ_delta)
-
-        !silence && Printf.@printf("%4d | %7d | %e | %e |\n", iteration, steps, max_delta, mean_delta)
-
-        ρ_prev = ρ
-        iteration += 1
-        if iteration > iteration_limit
-            error("iteration limit reached in simulate function without reaching convergence criteria")
-        end
-    end
-
-    if !silence
-        println("")
-        println("\033[1mconverged\033[0m")
-        Printf.@printf("   iterations........: %d\n", iteration-1)
-        Printf.@printf("   simulation steps..: %d\n", steps)
-        Printf.@printf("   maximum difference: %e <= %e\n", max_delta, max_tol)
-        Printf.@printf("   mean difference...: %e <= %e\n", mean_delta, mean_tol)
-        Printf.@printf("   runtime (seconds).: %f\n", time()-start_time)
-        println("")
-    end
-
-    return ρ_prev
-end
-
-
-
-
 "computes the n-th Bernoulli number divided by n-th factorial number"
 function _bernoulli_factorial(n)
     if n == 1
@@ -470,7 +400,7 @@ end
 """
 an any-order magnus expansion solver with a fixed number of time steps
 """
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+function simulate_flexible_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
     @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
@@ -561,20 +491,42 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
 end
 
 
+
 """
-a convergence tolerance-based any-order magnus expansion solver
+Main function for performing quantum annealing simulation via a Magnus Expansion (second order).
+Noise can be simulated by running multiple times with randomized constant fields.
+
+Arguments:
+ising_model - ising model represented as a dictionary.  The qubits
+              and couplings are represented as tuples, and the weights
+              are numbers.
+              For Example: im = Dict((1,) => 1, (2,) => 0.5, (1,2) => 2)
+annealing_schedule - The annealing schedule, of the form given by the struct
+
+Parameters:
+initial_state - Initial state vector. Defaults to uniform superposition state on n qubits
+constant_field_x - vector of constant biases in the X basis on each qubit. Default is zeros(n)
+constant_field_z - vector of constant biases in the Z basis on each qubit. Default is zeros(n)
+The parameters `mean_tol` and `max_tol` specify the desired simulation accuracy.
+The `silence` parameter can be used to suppress the progress log.
 """
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, order::Int; steps=2, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
+function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule; steps=2, order=4, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
     mean_delta = mean_tol + 1.0
     max_delta = max_tol + 1.0
 
+    simulate_method = simulate_fixed_order
+    if order > 4 || haskey(kwargs, :constant_field_x) || haskey(kwargs, :constant_field_z)
+        simulate_method = simulate_flexible_order
+    end
+
     if !silence
         println()
+        println("order: $(order)  method: $(simulate_method)")
         println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
     end
 
-    ρ_prev = simulate(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
+    ρ_prev = simulate_method(ising_model, annealing_time, annealing_schedule, steps, order; kwargs...)
 
     iteration = 1
     while mean_delta >= mean_tol || max_delta >= max_tol
@@ -584,7 +536,7 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
             empty!(state_steps)
         end
 
-        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
+        ρ = simulate_method(ising_model, annealing_time, annealing_schedule, steps, order; state_steps=state_steps, kwargs...)
 
         ρ_delta = abs.(ρ .- ρ_prev)
         mean_delta = sum(ρ_delta)/length(ρ_delta)
@@ -602,7 +554,6 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
     if !silence
         println("")
         println("\033[1mconverged\033[0m")
-        Printf.@printf("   order.............: %d\n", order)
         Printf.@printf("   iterations........: %d\n", iteration-1)
         Printf.@printf("   simulation steps..: %d\n", steps)
         Printf.@printf("   maximum difference: %e <= %e\n", max_delta, max_tol)
@@ -613,3 +564,4 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
 
     return ρ_prev
 end
+

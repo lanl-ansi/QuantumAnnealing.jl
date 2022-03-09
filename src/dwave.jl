@@ -233,7 +233,7 @@ function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_sched
         x_field = x_bias[shot]
         z_field = z_bias[shot]
 
-        ρ = simulate(ising_model, annealing_time, annealing_schedule, steps, order, constant_field_x=[x_field], constant_field_z=[z_field])
+        ρ = simulate_flexible_order(ising_model, annealing_time, annealing_schedule, steps, order, constant_field_x=[x_field], constant_field_z=[z_field])
 
         accumulator = accumulator + ρ
     end
