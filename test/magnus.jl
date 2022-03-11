@@ -45,21 +45,16 @@
         H_parts = QuantumAnnealing._H_parts(x_component, z_component, order)
         Ω_list1 = QuantumAnnealing._Ω_list(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
-        a_2, a_1, a_0 = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.B, s0, s1)
+        aqc = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.A, s0, s1)
+        bqc = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.B, s0, s1)
 
-        a_2_shift = a_2
-        a_1_shift = a_1 + 2*a_2*s0
-        a_0_shift = a_0 + a_1*s0 + a_2*s0^2
-
-        b_2_shift = b_2
-        b_1_shift = b_1 + 2*b_2*s0
-        b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+        aqc = QuantumAnnealing._shift_quadratic_coefficients(s0, aqc...)
+        bqc = QuantumAnnealing._shift_quadratic_coefficients(s0, bqc...)
 
         H = -im*annealing_time*[
-            a_0_shift * x_component + b_0_shift * z_component,
-            a_1_shift * x_component + b_1_shift * z_component,
-            a_2_shift * x_component + b_2_shift * z_component,
+            aqc[1] * x_component + bqc[1] * z_component,
+            aqc[2] * x_component + bqc[2] * z_component,
+            aqc[3] * x_component + bqc[3] * z_component,
         ]
 
         Ω_list_tmp = QuantumAnnealing._magnus_generator(H, order)

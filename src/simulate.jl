@@ -16,17 +16,29 @@ converts an arbitrary function `f(s)` into a quadratic form based on
 interpolation between two extreme points `s0` and `s1`
 """
 function _get_quadratic_coefficients(f, s0, s1)
-    smid = (s0+s1)/2.0
+    sm = (s0+s1)/2.0
 
-    b = f.([s0, smid, s1])
-    A = [(s0)^2 (s0) 1
-         (smid)^2 (smid) 1
-         (s1)^2 (s1) 1]
+    b = f.([s0, sm, s1])
+    A = [
+        1 s0 s0^2;
+        1 sm sm^2;
+        1 s1 s1^2
+    ]
 
     x = A\b
 
     return x
 end
+
+"shifts a quadatric function by a value of x"
+function _shift_quadratic_coefficients(x, c0, c1, c2)
+    c0_shift = c0 + c1*x + c2*x^2
+    c1_shift = c1 + 2*c2*x
+    c2_shift = c2
+
+    return [c0_shift, c1_shift, c2_shift]
+end
+
 
 function _lie_bracket(A, B)
     return -im * (A*B - B*A)
@@ -191,41 +203,28 @@ function _Ω_list(annealing_time::Real, s0::Real, s1::Real, annealing_schedule::
     δs = s1 - s0
     δst = annealing_time*δs
 
-    a_2, a_1, a_0 = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
-    b_2, b_1, b_0 = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
+    aqc = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
+    bqc = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
 
-    a_2_shift = a_2
-    a_1_shift = a_1 + 2*a_2*s0
-    a_0_shift = a_0 + a_1*s0 + a_2*s0^2
+    aqc = _shift_quadratic_coefficients(s0, aqc...)
+    bqc = _shift_quadratic_coefficients(s0, bqc...)
 
-    b_2_shift = b_2
-    b_1_shift = b_1 + 2*b_2*s0
-    b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+    aqc = [aqc[1], δs*aqc[2], δs^2*aqc[3]]
+    bqc = [bqc[1], δs*bqc[2], δs^2*bqc[3]]
 
-    a_2_shift2 = δs^2*a_2_shift
-    a_1_shift2 = δs*a_1_shift
-    a_0_shift2 = a_0_shift
-
-    b_2_shift2 = δs^2*b_2_shift
-    b_1_shift2 = δs*b_1_shift
-    b_0_shift2 = b_0_shift
-
-    a_vec = [a_0_shift2, a_1_shift2, a_2_shift2]
-    b_vec = [b_0_shift2, b_1_shift2, b_2_shift2]
-
-    Ω1 = -im*δst*(_int1(a_vec)*H_parts[(1,)] + _int1(b_vec)*H_parts[(2,)])
+    Ω1 = -im*δst*(_integral_1(aqc)*H_parts[(1,)] + _integral_1(bqc)*H_parts[(2,)])
     Ω_list = [Ω1]
 
     if order >= 2
-        Ω2 = -im*δst^2/2*(_int21(a_vec,b_vec)*H_parts[(2,1)])
+        Ω2 = -im*δst^2/2*(_integral_21(aqc,bqc)*H_parts[(2,1)])
         push!(Ω_list, Ω2)
     end
     if order >= 3
-        Ω3 = -im*δst^3/6*(_int31(a_vec,b_vec)*H_parts[(3,1)] + _int31(b_vec,a_vec)*H_parts[(3,2)])
+        Ω3 = -im*δst^3/6*(_integral_31(aqc,bqc)*H_parts[(3,1)] + _integral_31(bqc,aqc)*H_parts[(3,2)])
         push!(Ω_list, Ω3)
     end
     if order >= 4
-        Ω4 = -im*δst^4/6*(_int41(a_vec,b_vec)*H_parts[(4,1)] + _int42(a_vec,b_vec)*H_parts[(4,2)] + _int41(b_vec,a_vec)*H_parts[(4,3)])
+        Ω4 = -im*δst^4/6*(_integral_41(aqc,bqc)*H_parts[(4,1)] + _integral_42(aqc,bqc)*H_parts[(4,2)] + _integral_41(bqc,aqc)*H_parts[(4,3)])
         push!(Ω_list, Ω4)
     end
 
@@ -233,17 +232,17 @@ function _Ω_list(annealing_time::Real, s0::Real, s1::Real, annealing_schedule::
 end
 
 
-function _int1(u::Vector)
+function _integral_1(u::Vector)
     return u[1] + u[2]/2 + u[3]/3
 end
 
-function _int21(u::Vector, v::Vector)
+function _integral_21(u::Vector, v::Vector)
     return u[2]*v[1]/6 + u[3]*v[1]/6 -
         u[1]*v[2]/6 + u[3]*v[2]/30 -
         u[1]*v[3]/6 - u[2]*v[3]/30
 end
 
-function _int31(u::Vector, v::Vector)
+function _integral_31(u::Vector, v::Vector)
     return u[2]^2*v[1]/40 - u[1]*u[3]*v[1]/60 +
         u[2]*u[3]*v[1]/24 + 5*u[3]^2*v[1]/252 -
         u[1]*u[2]*v[2]/40 - u[1]*u[3]*v[2]/30 +
@@ -253,7 +252,7 @@ function _int31(u::Vector, v::Vector)
         u[2]*u[3]*v[3]/360
 end
 
-function _int41(u::Vector, v::Vector)
+function _integral_41(u::Vector, v::Vector)
     return -u[1]^2*u[2]*v[1]/120 - u[1]*u[2]^2*v[1]/120 -
         u[2]^3*v[1]/840 - u[1]^2*u[3]*v[1]/120 -
         19*u[1]*u[2]*u[3]*v[1]/1260 - u[2]^2*u[3]*v[1]/360 -
@@ -270,7 +269,7 @@ function _int41(u::Vector, v::Vector)
         u[2]*u[3]^2*v[3]/7920
 end
 
-function _int42(u::Vector, v::Vector)
+function _integral_42(u::Vector, v::Vector)
     return u[1]*u[2]*v[1]^2/60 + u[2]^2*v[1]^2/120 +
         u[1]*u[3]*v[1]^2/60 + 19*u[2]*u[3]*v[1]^2/1260 +
         17*u[3]^2*v[1]^2/2520 - u[1]^2*v[1]*v[2]/60 +
@@ -446,24 +445,19 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
         s1 = s_steps[i+1]
         δs = s1 - s0
 
-        a_2, a_1, a_0 = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
+        aqc = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
+        bqc = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
 
-        a_2_shift = a_2
-        a_1_shift = a_1 + 2*a_2*s0
-        a_0_shift = a_0 + a_1*s0 + a_2*s0^2
-
-        b_2_shift = b_2
-        b_1_shift = b_1 + 2*b_2*s0
-        b_0_shift = b_0 + b_1*s0 + b_2*s0^2
+        aqc = _shift_quadratic_coefficients(s0, aqc...)
+        bqc = _shift_quadratic_coefficients(s0, bqc...)
 
         constant_x = sum_x(n, constant_field_x)
         constant_z = sum_z(n, constant_field_z)
 
         H = -im*annealing_time*[
-            a_0_shift * x_component + b_0_shift * z_component + constant_x + constant_z,
-            a_1_shift * x_component + b_1_shift * z_component,
-            a_2_shift * x_component + b_2_shift * z_component,
+            aqc[1] * x_component + bqc[1] * z_component + constant_x + constant_z,
+            aqc[2] * x_component + bqc[2] * z_component,
+            aqc[3] * x_component + bqc[3] * z_component,
         ]
 
         #Ω_list = _magnus_generator([Matrix(h) for h in H], order)
