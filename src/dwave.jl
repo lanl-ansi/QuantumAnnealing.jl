@@ -186,17 +186,50 @@ function parse_dwave_annealing_schedule(infile; header=1, delim=',', interpolati
     )
 end
 
+
+"""
+Function to modify an existing annealing schedule to use a customized
+annealing schedule (asch).  These parameters are the same as those
+used in a dwisc call or a dwave schedule.
+Inputs:
+annealing_schedule - annealing_schedule
+
+Parameters:
+asch - This is the annealing-schedule parameter.  This is a list of tuples of the form
+       [(s₀,s_effective₀), (s₀,s_effective₁), ..., (sₙ,s_effectiveₙ)].
+"""
+function dwave_annealing_protocol(annealing_schedule::AnnealingSchedule; asch=[(0,0) (1,1)])
+    asch_slopes = zeros(length(asch)-1)
+    for i in 1:(length(asch)-1)
+        s0,s_eff_0 = asch[i]
+        s1,s_eff_1 = asch[i+1]
+        asch_slopes[i] = (s_eff_1 - s_eff_0)/(s1 - s0)
+    end
+
+    #branchless piecewise function using linear interpolation from y = m*(x-x0) + y0
+    function asch_func(s)
+        return sum([(asch_slopes[i]*(s-asch[i][1]) + asch[i][2]) * (asch[i][1] <= s < asch[i+1][1]) for i = 1:(length(asch)-1)]) + ((s == asch[end][1])*asch[end][2])
+    end
+
+    new_annealing_schedule = AnnealingSchedule(
+        s -> annealing_schedule.A(asch_func(s)),
+        s -> annealing_schedule.B(asch_func(s))
+    )
+    return new_annealing_schedule
+end
+
+
 """
 function that allows for simulation from a bqpjson data file
 """
-function simulate_bqpjson(infile, outfile, annealing_time, annealing_schedule, steps; order=4, simulated_num_reads=1e17, scale=1.0)
+function simulate_bqpjson(infile, outfile, annealing_time, annealing_schedule; simulated_num_reads=1e17, scale=1.0, kwargs...)
     ising_model, qubit_ids = read_bqpjson(infile)
     n = length(qubit_ids)
     for (k,v) in ising_model
         ising_model[k] = v*scale
     end
 
-    ρ = simulate_fixed_order(ising_model, annealing_time, annealing_schedule, steps, order)
+    ρ = simulate(ising_model, annealing_time, annealing_schedule; kwargs...)
 
     write_dwisc(outfile, ρ, ising_model, qubit_ids, simulated_num_reads=simulated_num_reads, annealing_time=annealing_time)
 end
@@ -206,7 +239,7 @@ end
 function that allows for simulation with x and z noise from a bqpjson data file.
 The `x_bias` and `z_bias` parameters provide vectors of noise realizations.
 """
-function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_schedule, steps; order=4, simulated_num_reads=1e17, scale=1.0, x_bias::Vector{<:Any}=[], z_bias::Vector{<:Any}=[])
+function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_schedule; simulated_num_reads=1e17, scale=1.0, x_bias::Vector{<:Any}=[], z_bias::Vector{<:Any}=[], kwargs...)
     if length(x_bias) > 0 && length(z_bias) > 0 && length(x_bias) != length(z_bias)
         error("x_bias and z_bias require the same number of parameters given, $(length(x_bias)) and $(length(z_bias)) respectively")
     end
@@ -233,7 +266,7 @@ function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_sched
         x_field = x_bias[shot]
         z_field = z_bias[shot]
 
-        ρ = simulate_flexible_order(ising_model, annealing_time, annealing_schedule, steps, order, constant_field_x=[x_field], constant_field_z=[z_field])
+        ρ = simulate(ising_model, annealing_time, annealing_schedule, constant_field_x=[x_field], constant_field_z=[z_field]; kwargs...)
 
         accumulator = accumulator + ρ
     end
@@ -312,35 +345,4 @@ function write_dwisc(outfile::String, ρ, ising_model, qubit_ids; simulated_num_
     open(outfile,"w") do io
         write(io, json_string)
     end
-end
-
-"""
-Function to modify an existing annealing schedule to use a customized
-annealing schedule (asch).  These parameters are the same as those
-used in a dwisc call or a dwave schedule.
-Inputs:
-annealing_schedule - annealing_schedule
-
-Parameters:
-asch - This is the annealing-schedule parameter.  This is a list of tuples of the form
-       [(s₀,s_effective₀), (s₀,s_effective₁), ..., (sₙ,s_effectiveₙ)].
-"""
-function dwave_annealing_protocol(annealing_schedule::AnnealingSchedule; asch=[(0,0) (1,1)])
-    asch_slopes = zeros(length(asch)-1)
-    for i in 1:(length(asch)-1)
-        s0,s_eff_0 = asch[i]
-        s1,s_eff_1 = asch[i+1]
-        asch_slopes[i] = (s_eff_1 - s_eff_0)/(s1 - s0)
-    end
-
-    #branchless piecewise function using linear interpolation from y = m*(x-x0) + y0
-    function asch_func(s)
-        return sum([(asch_slopes[i]*(s-asch[i][1]) + asch[i][2]) * (asch[i][1] <= s < asch[i+1][1]) for i = 1:(length(asch)-1)]) + ((s == asch[end][1])*asch[end][2])
-    end
-
-    new_annealing_schedule = AnnealingSchedule(
-        s -> annealing_schedule.A(asch_func(s)),
-        s -> annealing_schedule.B(asch_func(s))
-    )
-    return new_annealing_schedule
 end

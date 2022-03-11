@@ -15,4 +15,6 @@ include("common.jl")
 
     include("simulate.jl")
 
+    include("dwave.jl")
+
 end
