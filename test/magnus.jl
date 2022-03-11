@@ -43,11 +43,10 @@
         end
 
         H_parts = QuantumAnnealing._H_parts(x_component, z_component, order)
+        Ω_list1 = QuantumAnnealing._Ω_list(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        Ω_list1 = QuantumAnnealing._Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], H_parts, order)
+        a_2, a_1, a_0 = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.A, s0, s1)
+        b_2, b_1, b_0 = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.B, s0, s1)
 
         a_2_shift = a_2
         a_1_shift = a_1 + 2*a_2*s0

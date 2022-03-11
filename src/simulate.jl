@@ -1,5 +1,4 @@
 
-
 """
 An AnnealingSchedule implementing uniform circular motion with an analytical
 solution on a single qubit
@@ -16,7 +15,7 @@ const AS_QUADRATIC = AnnealingSchedule(s -> (1.0-s)^2, s -> s^2)
 converts an arbitrary function `f(s)` into a quadratic form based on
 interpolation between two extreme points `s0` and `s1`
 """
-function get_function_coefficients(f, s0, s1)
+function _get_quadratic_coefficients(f, s0, s1)
     smid = (s0+s1)/2.0
 
     b = f.([s0, smid, s1])
@@ -142,10 +141,7 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
         s1 = s_steps[i+1]
         δs = s1 - s0
 
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
-
-        Ω_list = _Ω_list(annealing_time, s0, s1, [a_2, a_1, a_0], [b_2, b_1, b_0], H_parts, order)
+        Ω_list = _Ω_list(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
         #for (i,Ωi) in enumerate(Ω_list)
         #   println("Ω_$(i)")
@@ -190,13 +186,13 @@ function _H_parts(x_component, z_component, order::Int)
 end
 
 
-function _Ω_list(annealing_time::Real, s0::Real, s1::Real, a_coefficients::Vector, b_coefficients::Vector, H_parts::Dict, order::Int)
+function _Ω_list(annealing_time::Real, s0::Real, s1::Real, annealing_schedule::AnnealingSchedule, H_parts::Dict, order::Int)
     @assert(1 <= order && order <= 4)
     δs = s1 - s0
     δst = annealing_time*δs
 
-    a_2, a_1, a_0 = a_coefficients
-    b_2, b_1, b_0 = b_coefficients
+    a_2, a_1, a_0 = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
+    b_2, b_1, b_0 = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
 
     a_2_shift = a_2
     a_1_shift = a_1 + 2*a_2*s0
@@ -450,8 +446,8 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
         s1 = s_steps[i+1]
         δs = s1 - s0
 
-        a_2, a_1, a_0 = get_function_coefficients(annealing_schedule.A, s0, s1)
-        b_2, b_1, b_0 = get_function_coefficients(annealing_schedule.B, s0, s1)
+        a_2, a_1, a_0 = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
+        b_2, b_1, b_0 = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
 
         a_2_shift = a_2
         a_1_shift = a_1 + 2*a_2*s0
