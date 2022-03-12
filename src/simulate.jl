@@ -45,41 +45,41 @@ function _lie_bracket(A, B)
 end
 
 function _tensor_sum_single_qubit(mat, n::Int)
-    return sum([foldl(kron,[j == i ? mat : IMAT for i in n:-1:1]) for j in 1:n])
+    return sum([foldl(kron,[j == i ? mat : _IMAT for i in n:-1:1]) for j in 1:n])
 end
 
 function _tensor_sum_single_qubit(mat, n::Int, weights::Vector)
-    return sum([foldl(kron,[j == i ? weights[j] * mat : IMAT for i in n:-1:1]) for j in 1:n])
+    return sum([foldl(kron,[j == i ? weights[j] * mat : _IMAT for i in n:-1:1]) for j in 1:n])
 end
 
-function sum_x(n::Int)
-    return _tensor_sum_single_qubit(XMAT, n)
+function _sum_X(n::Int)
+    return _tensor_sum_single_qubit(_XMAT, n)
 end
 
-function sum_x(n::Int, w::Vector)
-    return _tensor_sum_single_qubit(XMAT, n, w)
+function _sum_X(n::Int, w::Vector)
+    return _tensor_sum_single_qubit(_XMAT, n, w)
 end
 
-function sum_y(n::Int)
-    return _tensor_sum_single_qubit(YMAT, n)
+function _sum_Y(n::Int)
+    return _tensor_sum_single_qubit(_YMAT, n)
 end
 
-function sum_y(n::Int, w::Vector)
-    return _tensor_sum_single_qubit(YMAT, n, w)
+function _sum_Y(n::Int, w::Vector)
+    return _tensor_sum_single_qubit(_YMAT, n, w)
 end
 
-function sum_z(n::Int)
-    return _tensor_sum_single_qubit(ZMAT, n)
+function _sum_Z(n::Int)
+    return _tensor_sum_single_qubit(_ZMAT, n)
 end
 
-function sum_z(n::Int, w::Vector)
-    return _tensor_sum_single_qubit(ZMAT, n, w)
+function _sum_Z(n::Int, w::Vector)
+    return _tensor_sum_single_qubit(_ZMAT, n, w)
 end
 
-function sum_z_tup(n, tup, w)
+function _sum_Z(n::Int, t, w::Real)
     Ivec = [1;1]
     Zvec = [1;-1]
-    matvec = [k in tup ? Zvec : Ivec for k in n:-1:1]
+    matvec = [k in t ? Zvec : Ivec for k in n:-1:1]
     return SparseArrays.spdiagm(complex(w * foldl(kron, matvec)))
 end
 
@@ -98,10 +98,10 @@ s - the imaginary timestep. This should usually be in the range from 0.0-to-1.0
 function transverse_ising_hamiltonian(ising_model::Dict, annealing_schedule::AnnealingSchedule, s::Real)
     n = _check_ising_model_ids(ising_model)
 
-    x_component = sum_x(n)
+    x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
+        z_component += _sum_Z(n, tup, w)
     end
 
     return annealing_schedule.A(s) * x_component + annealing_schedule.B(s) * z_component
@@ -132,17 +132,17 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
     ηs = ones(n)
     hs = zeros(n)
 
-    x_component = sum_x(n)
+    x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
+        z_component = z_component + _sum_Z(n, tup, w)
     end
 
     H_parts = _H_parts(x_component, z_component, order)
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
+    U = foldl(kron, [_IMAT for i = 1:n])
 
     if track_states
         push!(state_steps, R_current)
@@ -400,6 +400,9 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
     end
+    if order > 10
+        @warn("magnus expansion orders above 10 can produce numerical stability issues, given $(order)", maxlog=1)
+    end
 
     n = _check_ising_model_ids(ising_model)
 
@@ -425,15 +428,15 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
     ηs = ones(n)
     hs = zeros(n)
 
-    x_component = sum_x(n)
+    x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component = z_component + sum_z_tup(n, tup, w)
+        z_component = z_component + _sum_Z(n, tup, w)
     end
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
-    U = foldl(kron, [IMAT for i = 1:n])
+    U = foldl(kron, [_IMAT for i = 1:n])
 
     if track_states
         push!(state_steps, R_current)
@@ -451,8 +454,8 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
         aqc = _shift_quadratic_coefficients(s0, aqc...)
         bqc = _shift_quadratic_coefficients(s0, bqc...)
 
-        constant_x = sum_x(n, constant_field_x)
-        constant_z = sum_z(n, constant_field_z)
+        constant_x = _sum_X(n, constant_field_x)
+        constant_z = _sum_Z(n, constant_field_z)
 
         H = -im*annealing_time*[
             aqc[1] * x_component + bqc[1] * z_component + constant_x + constant_z,

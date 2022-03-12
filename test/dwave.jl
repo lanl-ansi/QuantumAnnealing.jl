@@ -77,7 +77,7 @@
         bqpjson_file = "data/bqpjson_1q.json"
         dwisc_file = "tmp.json"
 
-        simulate_noisy_bqpjson(bqpjson_file, dwisc_file, annealing_time, annealing_schedule, z_bias=z_bias, silence=true)
+        simulate_bqpjson_noisy(bqpjson_file, dwisc_file, annealing_time, annealing_schedule, z_bias=z_bias, silence=true)
 
         dwisc_data = JSON.parsefile(dwisc_file)
         rm(dwisc_file)
@@ -98,7 +98,7 @@
         bqpjson_file = "data/bqpjson_1q.json"
         dwisc_file = "tmp.json"
 
-        simulate_noisy_bqpjson(bqpjson_file, dwisc_file, annealing_time, annealing_schedule, x_bias=x_bias, z_bias=z_bias, silence=true)
+        simulate_bqpjson_noisy(bqpjson_file, dwisc_file, annealing_time, annealing_schedule, x_bias=x_bias, z_bias=z_bias, silence=true)
 
         dwisc_data = JSON.parsefile(dwisc_file)
         rm(dwisc_file)

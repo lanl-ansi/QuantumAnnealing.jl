@@ -198,14 +198,14 @@ end
 
         ss = 0.0:0.001:1.0
         asch = [(0.0,0.0), (1.0,1.0)]
-        mod_asch = dwave_annealing_protocol(annealing_schedule, asch=asch)
+        mod_asch = annealing_protocol_dwave(annealing_schedule, asch=asch)
         @test isapprox(mod_asch.A.(ss), annealing_schedule.A.(ss))
         @test isapprox(mod_asch.B.(ss), annealing_schedule.B.(ss))
 
         ss_reg = [0.0, 0.25, 0.5, 0.5, 0.5, 0.75, 1.0]
         ss_mod = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]
         asch = [(0.0,0.0), (0.4,0.5), (0.6,0.5), (1.0,1.0)]
-        mod_asch = dwave_annealing_protocol(annealing_schedule, asch=asch)
+        mod_asch = annealing_protocol_dwave(annealing_schedule, asch=asch)
         @test isapprox(mod_asch.A.(ss_mod), annealing_schedule.A.(ss_reg))
         @test isapprox(mod_asch.B.(ss_mod), annealing_schedule.B.(ss_reg))
     end

@@ -33,8 +33,8 @@ function simulate_de(ising_model, annealing_time, annealing_schedule, reltol; ab
         constant_field_z = zeros(n)
     end
 
-    const_x_component = sum_x(n, constant_field_x)
-    const_z_component = sum_z(n, constant_field_z)
+    const_x_component = _sum_X(n, constant_field_x)
+    const_z_component = _sum_Z(n, constant_field_z)
 
     H(s) = transverse_ising_hamiltonian(ising_model, annealing_schedule, s) + const_x_component + const_z_component
     schrod_eq(state, time, s) = -im * time * H(s) * state

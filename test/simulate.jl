@@ -94,7 +94,7 @@
     @testset "csv schedule pwq, low resolution, analytical solution" begin
         ρ = simulate_fixed_order(one_spin_model, 1.0, AS_CIRCULAR_pwq_csv_100, 100, 4)
 
-        # NOTE, atol required due to pwq approximation in the schedule file
+        # NOTE, atol required due to pwq approx_IMATion in the schedule file
         @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-6)
         @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-7)
     end
@@ -102,7 +102,7 @@
     @testset "csv schedule pwl, low resolution, analytical solution" begin
         ρ = simulate_fixed_order(one_spin_model, 1.0, AS_CIRCULAR_pwl_csv_100, 100, 4)
 
-        # NOTE, atol required due to pwl approximation in the schedule file
+        # NOTE, atol required due to pwl approx_IMATion in the schedule file
         @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-4)
         @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-5)
     end
@@ -110,7 +110,7 @@
     @testset "csv schedule pwc, low resolution, analytical solution" begin
         ρ = simulate_fixed_order(one_spin_model, 1.0, AS_CIRCULAR_pwc_csv_100, 100, 4)
 
-        # NOTE, atol required due to pwc approximation in the schedule file
+        # NOTE, atol required due to pwc approx_IMATion in the schedule file
         @test isapprox(one_spin_ρ(1.0), ρ, atol=1e-2)
         @test !isapprox(one_spin_ρ(1.0), ρ, atol=1e-3)
     end
@@ -119,7 +119,7 @@
         ρ_target = [0.88389+0.0im -0.197484-0.252247im; -0.197484+0.252247im 0.11611+0.0im]
 
         asch = [(0.0, 1.0), (0.5, 0.5), (1.0, 1.0)]
-        mod_asch = dwave_annealing_protocol(AS_LINEAR, asch=asch)
+        mod_asch = annealing_protocol_dwave(AS_LINEAR, asch=asch)
 
         ρ = simulate_fixed_order(Dict((1,) => 0.1), 5.0, mod_asch, 100, 4, initial_state = [0,1])
 
@@ -134,7 +134,7 @@
 
         @test isapprox(one_spin_ρ(1.0), ρ)
         @test length(ρ_list) == steps
-        @test isapprox(ρ_list[1], (default_initial_state(1) * default_initial_state(1)'))
+        @test isapprox(ρ_list[1], (initial_state_default(1) * initial_state_default(1)'))
         @test isapprox(ρ_list[steps], one_spin_ρ(1.0))
     end
 
@@ -144,7 +144,7 @@
 
         @test isapprox(one_spin_ρ(1.0), ρ)
         @test length(ρ_list) == 64
-        @test isapprox(ρ_list[1], (default_initial_state(1) * default_initial_state(1)'))
+        @test isapprox(ρ_list[1], (initial_state_default(1) * initial_state_default(1)'))
         @test isapprox(ρ_list[64], one_spin_ρ(1.0))
     end
 end
@@ -215,12 +215,9 @@ end
 @testset "simulate, multi-qubit" begin
 
     @testset "2 qubit, function schedules (AS_CIRCULAR, AS_LINEAR, AS_QUADRATIC), near adiabatic limit" begin
-        n = 2
-        h = ones(n)
-        J = Dict((1,2) => -1)
         ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
@@ -248,12 +245,9 @@ end
     end
 
     @testset "2 qubit, function schedules (AS_DW_QUADRATIC), near adiabatic limit" begin
-        n = 2
-        h = ones(n)
-        J = Dict((1,2) => -1)
         ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
@@ -269,12 +263,9 @@ end
     end
 
     @testset "2 qubit, csv schedule, near adiabatic limit" begin
-        n = 2
-        h = ones(2)
-        J = Dict((1,2) => -1)
         ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
@@ -288,12 +279,9 @@ end
     end
 
     @testset "2 qubit, function schedule, fractional values, near adiabatic limit" begin
-        n = 2
-        h = ones(2)
-        J = Dict((1,2) => -0.76)
         ising_model = Dict((1,) => 0.5, (1,2) => -0.75)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
@@ -308,15 +296,14 @@ end
     end
 
     @testset "2 qubit probability trajectory, nonadaptive" begin
-        n = 2
-        h = ones(n)
-        J = Dict((1,2) => -1)
         ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
+
+        n = QuantumAnnealing._check_ising_model_ids(ising_model)
 
         annealing_time = 10.0
         steps = 1000
@@ -325,22 +312,21 @@ end
         ρ = simulate_fixed_order(ising_model, annealing_time, AS_DW_QUADRATIC, steps, 4, state_steps=ρ_list)
         @test real(ρ[4,4]) >= 0.9999
         @test length(ρ_list) == steps
-        @test isapprox(ρ_list[1], (default_dwave_initial_state(n) * default_dwave_initial_state(n)'))
+        @test isapprox(ρ_list[1], (initial_state_default_dwave(n) * initial_state_default_dwave(n)'))
         @test real(ρ_list[steps][4,4]) >= 0.9999
         @test isapprox(min_ρ, ρ, atol=1e-3)
         @test !isapprox(min_ρ, ρ, atol=1e-4)
     end
 
     @testset "2 qubit probability trajectory, adaptive" begin
-        n = 2
-        h = ones(n)
-        J = Dict((1,2) => -1)
         ising_model = Dict((1,) => 1, (2,) => 1, (1,2) => -1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
         min_vec=evecs[:,1]
         min_ρ = min_vec * min_vec'
+
+        n = QuantumAnnealing._check_ising_model_ids(ising_model)
 
         annealing_time = 10.0
 
@@ -348,7 +334,7 @@ end
         ρ = simulate(ising_model, annealing_time, AS_DW_QUADRATIC, silence=true, state_steps=ρ_list)
         @test real(ρ[4,4]) >= 0.9999
         @test length(ρ_list) == 512
-        @test isapprox(ρ_list[1], (default_dwave_initial_state(n) * default_dwave_initial_state(n)'))
+        @test isapprox(ρ_list[1], (initial_state_default_dwave(n) * initial_state_default_dwave(n)'))
         @test real(ρ_list[end][4,4]) >= 0.9999
         @test isapprox(min_ρ, ρ, atol=1e-3)
         @test !isapprox(min_ρ, ρ, atol=1e-4)
@@ -356,12 +342,9 @@ end
 
     @testset "3 qubit, degenerate, function schedules (AS_CIRCULAR, AS_QUADRATIC), near adiabatic limit" begin
         # ring of disagrees => 6 ground states
-        n = 3
-        h = zeros(n)
-        J = Dict((1,2) => 1, (1,3) => 1, (2,3) => 1)
-        ising_model = J
+        ising_model = Dict((1,2) => 1, (1,3) => 1, (2,3) => 1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
 
         annealing_time = 100.0
@@ -384,12 +367,9 @@ end
 
     @testset "3 qubit, degenerate, function schedules (AS_DW_QUADRATIC), near adiabatic limit" begin
         # ring of disagrees => 6 ground states
-        n = 3
-        h = zeros(n)
-        J = Dict((1,2) => 1, (1,3) => 1, (2,3) => 1)
-        ising_model = J
+        ising_model = Dict((1,2) => 1, (1,3) => 1, (2,3) => 1)
 
-        H = sum_z(n,h) + sum_zizj(n,J)
+        H = ising_hamiltonian(ising_model)
         evals,evecs = eigen(Matrix(H))
 
         annealing_time = 100.0
@@ -405,11 +385,7 @@ end
 
     @testset "3 qubit, csv schedule, near adiabatic limit" begin
         #ring of disagrees => 6 ground states
-        n = 3
-        h = zeros(n)
-        J = Dict((1,2) => 1, (1,3) => 1, (2,3) => 1)
-        ising_model = J
-
+        ising_model = Dict((1,2) => 1, (1,3) => 1, (2,3) => 1)
         annealing_time = 100.0
         steps = 500
 

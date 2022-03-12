@@ -62,14 +62,14 @@ end
 s_100 = range(0, 1, length=100)
 s_10000 = range(0, 1, length=10000)
 
-AS_CIRCULAR_pwc_csv_100 = parse_dwave_annealing_schedule("data/trig_sched_100.csv", interpolation=:none, initial_state=default_initial_state)
-AS_CIRCULAR_pwc_csv_1000 = parse_dwave_annealing_schedule("data/trig_sched_1000.csv", interpolation=:none, initial_state=default_initial_state)
+AS_CIRCULAR_pwc_csv_100 = read_dwave_annealing_schedule("data/trig_sched_100.csv", interpolation=:none, initial_state=initial_state_default)
+AS_CIRCULAR_pwc_csv_1000 = read_dwave_annealing_schedule("data/trig_sched_1000.csv", interpolation=:none, initial_state=initial_state_default)
 
-AS_CIRCULAR_pwl_csv_100 = parse_dwave_annealing_schedule("data/trig_sched_100.csv", initial_state=default_initial_state)
-AS_CIRCULAR_pwl_csv_1000 = parse_dwave_annealing_schedule("data/trig_sched_1000.csv", initial_state=default_initial_state)
+AS_CIRCULAR_pwl_csv_100 = read_dwave_annealing_schedule("data/trig_sched_100.csv", initial_state=initial_state_default)
+AS_CIRCULAR_pwl_csv_1000 = read_dwave_annealing_schedule("data/trig_sched_1000.csv", initial_state=initial_state_default)
 
-AS_CIRCULAR_pwq_csv_100 = parse_dwave_annealing_schedule("data/trig_sched_100.csv", interpolation=:quadratic, initial_state=default_initial_state)
-AS_CIRCULAR_pwq_csv_1000 = parse_dwave_annealing_schedule("data/trig_sched_1000.csv", interpolation=:quadratic, initial_state=default_initial_state)
+AS_CIRCULAR_pwq_csv_100 = read_dwave_annealing_schedule("data/trig_sched_100.csv", interpolation=:quadratic, initial_state=initial_state_default)
+AS_CIRCULAR_pwq_csv_1000 = read_dwave_annealing_schedule("data/trig_sched_1000.csv", interpolation=:quadratic, initial_state=initial_state_default)
 
 
 function sum_zizj(n, J::Dict)
@@ -88,3 +88,13 @@ function zizj_vectorized(n::Int, i::Int, j::Int, J_val)
     return J_val * foldl(kron, matvec)
 end
 
+function ising_hamiltonian(ising_model)
+    n = QuantumAnnealing._check_ising_model_ids(ising_model)
+
+    z_component = zeros(2^n, 2^n)
+    for (tup,w) in ising_model
+        z_component += QuantumAnnealing._sum_Z(n, tup, w)
+    end
+
+    return z_component
+end

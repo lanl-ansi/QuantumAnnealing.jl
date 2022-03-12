@@ -4,29 +4,27 @@
 """
 ground state of sum_i A(0)X_i where A(0) < 0 and B(0) = 0
 """
-function default_dwave_initial_state(n)
+function initial_state_default_dwave(n)
     return complex(ones(2^n)./(2^(n/2)))
 end
 
 
 """
-An AnnealingSchedule approximating those used in hardware by D-Wave Systems
+An AnnealingSchedule approx_IMATing those used in hardware by D-Wave Systems
 
 NOTE: users are strongly encouraged to download annealing schedules for specific
 D-Wave Systems devices and load them using `parse_dwave_annealing_schedule`.
 """
 const AS_DW_QUADRATIC = AnnealingSchedule(
-    function A(s)
+    (s) -> begin
         if s >= 0.69
             return 0
         else
             return (6.366401*((1.449275)^2*s^2 + (-2.898551)*s + 1.0)*(2.0*π))/-2.0
         end
     end,
-    function B(s)
-        return (14.55571*(0.85*s^2 + 0.15*s + 0.0)*(2.0*π))/2.0
-    end,
-    default_dwave_initial_state
+    (s) -> (14.55571*(0.85*s^2 + 0.15*s + 0.0)*(2.0*π))/2.0,
+    initial_state_default_dwave
 )
 
 
@@ -133,7 +131,7 @@ function to take a CSV of DWave annealing schedule values and convert it into
 an annealing schedule usable by the simulator.
 valid values for interpolation are :none, :linear, :quadratic
 """
-function parse_dwave_annealing_schedule(infile; header=1, delim=',', interpolation=:linear, initial_state=default_dwave_initial_state)
+function read_dwave_annealing_schedule(infile; header=1, delim=',', interpolation=:linear, initial_state=initial_state_default_dwave)
     s_values = Float64[]
     a_values = Float64[]
     b_values = Float64[]
@@ -198,7 +196,7 @@ Parameters:
 asch - This is the annealing-schedule parameter.  This is a list of tuples of the form
        [(s₀,s_effective₀), (s₀,s_effective₁), ..., (sₙ,s_effectiveₙ)].
 """
-function dwave_annealing_protocol(annealing_schedule::AnnealingSchedule; asch=[(0,0) (1,1)])
+function annealing_protocol_dwave(annealing_schedule::AnnealingSchedule; asch=[(0,0) (1,1)])
     asch_slopes = zeros(length(asch)-1)
     for i in 1:(length(asch)-1)
         s0,s_eff_0 = asch[i]
@@ -239,7 +237,7 @@ end
 function that allows for simulation with x and z noise from a bqpjson data file.
 The `x_bias` and `z_bias` parameters provide vectors of noise realizations.
 """
-function simulate_noisy_bqpjson(infile, outfile, annealing_time, annealing_schedule; simulated_num_reads=1e17, scale=1.0, x_bias::Vector{<:Any}=[], z_bias::Vector{<:Any}=[], kwargs...)
+function simulate_bqpjson_noisy(infile, outfile, annealing_time, annealing_schedule; simulated_num_reads=1e17, scale=1.0, x_bias::Vector{<:Any}=[], z_bias::Vector{<:Any}=[], kwargs...)
     if length(x_bias) > 0 && length(z_bias) > 0 && length(x_bias) != length(z_bias)
         error("x_bias and z_bias require the same number of parameters given, $(length(x_bias)) and $(length(z_bias)) respectively")
     end
