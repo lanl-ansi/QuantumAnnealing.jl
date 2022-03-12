@@ -130,19 +130,19 @@ end
 @testset "transverse ising hamiltonian" begin
 
     @testset "1 qubit, analytical solution" begin
-        @test all(isapprox(one_spin_H(s), transverse_ising_hamiltonian(one_spin_model, AS_CIRCULAR, s)) for s in s_100)
+        @test all(isapprox(one_spin_H(s), hamiltonian_transverse_ising(one_spin_model, AS_CIRCULAR, s)) for s in s_100)
     end
 
     @testset "2 qubit, analytical solution" begin
-        @test all(isapprox(two_spin_H(s), transverse_ising_hamiltonian(two_spin_model, AS_CIRCULAR, s)) for s in s_100)
+        @test all(isapprox(two_spin_H(s), hamiltonian_transverse_ising(two_spin_model, AS_CIRCULAR, s)) for s in s_100)
     end
 
     @testset "1 qubit, linear schedule" begin
         annealing_schedule = AS_LINEAR
 
-        H_00 = transverse_ising_hamiltonian(one_spin_model, annealing_schedule, 0.0)
-        H_05 = transverse_ising_hamiltonian(one_spin_model, annealing_schedule, 0.5)
-        H_10 = transverse_ising_hamiltonian(one_spin_model, annealing_schedule, 1.0)
+        H_00 = hamiltonian_transverse_ising(one_spin_model, annealing_schedule, 0.0)
+        H_05 = hamiltonian_transverse_ising(one_spin_model, annealing_schedule, 0.5)
+        H_10 = hamiltonian_transverse_ising(one_spin_model, annealing_schedule, 1.0)
 
         @test isapprox(H_00, [0 1; 1 0])
         @test isapprox(H_05, [0.5 0.5; 0.5 -0.5])
@@ -152,9 +152,9 @@ end
     @testset "2 qubit, linear schedule" begin
         annealing_schedule = AS_LINEAR
 
-        H_00 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 0.0)
-        H_05 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 0.5)
-        H_10 = transverse_ising_hamiltonian(two_spin_model, annealing_schedule, 1.0)
+        H_00 = hamiltonian_transverse_ising(two_spin_model, annealing_schedule, 0.0)
+        H_05 = hamiltonian_transverse_ising(two_spin_model, annealing_schedule, 0.5)
+        H_10 = hamiltonian_transverse_ising(two_spin_model, annealing_schedule, 1.0)
 
         @test isapprox(H_00, [0.0 1.0 1.0 0.0; 1.0  0.0 0.0 1.0; 1.0 0.0  0.0 1.0; 0.0 1.0 1.0 0.0])
         @test isapprox(H_05, [1.0 0.5 0.5 0.0; 0.5 -1.0 0.0 0.5; 0.5 0.0 -1.0 0.5; 0.0 0.5 0.5 1.0])

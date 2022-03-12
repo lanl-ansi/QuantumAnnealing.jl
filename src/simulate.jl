@@ -95,7 +95,7 @@ ising_model - ising model represented as a dictionary.  The qubits
 annealing_schedule - The annealing schedule, of the form given by the struct
 s - the imaginary timestep. This should usually be in the range from 0.0-to-1.0
 """
-function transverse_ising_hamiltonian(ising_model::Dict, annealing_schedule::AnnealingSchedule, s::Real)
+function hamiltonian_transverse_ising(ising_model::Dict, annealing_schedule::AnnealingSchedule, s::Real)
     n = _check_ising_model_ids(ising_model)
 
     x_component = _sum_X(n)
