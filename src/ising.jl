@@ -24,7 +24,7 @@ function compute_ising_state_energies(ising_model::Dict)
 
     state_energy = Dict{Int,Float64}()
     for state_int in 0:(2^n-1)
-        spin_vector = binary2spin(int2binary(state_int, pad=n))
+        spin_vector = binary_to_spin(int_to_binary(state_int, pad=n))
         energy = eval_ising_state_energy(spin_vector, ising_model)
         state_energy[state_int] = energy
     end
@@ -64,8 +64,8 @@ function print_ising_energy_levels(ising_model::Dict; limit=3)
     for (i,energy_level) in enumerate(energy_levels)
         println("\033[1menergy: $(energy_level.energy)\033[0m")
         for state_id in sort(collect(energy_level.states))
-            state = binary2spin(int2binary(state_id, pad=n))
-            state_string = spin2braket(state)
+            state = binary_to_spin(int_to_binary(state_id, pad=n))
+            state_string = spin_to_braket(state)
             println("  $(state_string)")
         end
 
