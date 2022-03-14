@@ -76,7 +76,7 @@ function _sum_Z(n::Int, w::Vector)
     return _tensor_sum_single_qubit(_ZMAT, n, w)
 end
 
-function _sum_Z(n::Int, t, w::Real)
+function _kron_Z(n::Int, t, w::Real)
     Ivec = [1;1]
     Zvec = [1;-1]
     matvec = [k in t ? Zvec : Ivec for k in n:-1:1]
@@ -101,7 +101,7 @@ function hamiltonian_transverse_ising(ising_model::Dict, annealing_schedule::Ann
     x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component += _sum_Z(n, tup, w)
+        z_component += _kron_Z(n, tup, w)
     end
 
     return annealing_schedule.A(s) * x_component + annealing_schedule.B(s) * z_component
@@ -129,13 +129,10 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
 
     R0 = initial_state * initial_state'
 
-    ηs = ones(n)
-    hs = zeros(n)
-
     x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component = z_component + _sum_Z(n, tup, w)
+        z_component = z_component + _kron_Z(n, tup, w)
     end
 
     H_parts = _H_parts(x_component, z_component, order)
@@ -313,7 +310,7 @@ end
 "given two hamiltonians of orders 0-to-(n-1) and 0-to-(m-1), applies the _matrix_commutator operation"
 function _hamiltonian_commutator(h1::Vector, h2::Vector)
     max_index = (length(h1)-1)+(length(h2)-1)+1
-    zeros = 0*(h1[1]*h2[2])
+    zeros = 0*(h1[1]*h2[1])
     h_prod = [deepcopy(zeros) for i in 1:max_index]
 
     for (i,m1) in enumerate(h1)
@@ -425,13 +422,10 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
 
     R0 = initial_state * initial_state'
 
-    ηs = ones(n)
-    hs = zeros(n)
-
     x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component = z_component + _sum_Z(n, tup, w)
+        z_component = z_component + _kron_Z(n, tup, w)
     end
 
     s_steps = range(0, 1, length=steps)

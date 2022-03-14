@@ -93,7 +93,7 @@ function ising_hamiltonian(ising_model)
 
     z_component = zeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component += QuantumAnnealing._sum_Z(n, tup, w)
+        z_component += QuantumAnnealing._kron_Z(n, tup, w)
     end
 
     return z_component

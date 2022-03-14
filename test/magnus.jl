@@ -39,7 +39,7 @@
         x_component = QuantumAnnealing._sum_X(n)
         z_component = zeros(2^n, 2^n)
         for (tup,w) in ising_model
-            z_component += QuantumAnnealing._sum_Z(n, tup, w)
+            z_component += QuantumAnnealing._kron_Z(n, tup, w)
         end
 
         H_parts = QuantumAnnealing._H_parts(x_component, z_component, order)
