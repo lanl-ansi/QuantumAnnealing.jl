@@ -11,6 +11,10 @@ include("common.jl")
 
     include("base.jl")
 
+    include("magnus.jl")
+
     include("simulate.jl")
+
+    include("dwave.jl")
 
 end

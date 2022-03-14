@@ -14,23 +14,22 @@ struct AnnealingSchedule
 end
 
 """
-A short hand AnnealingSchedule constructor that uses the default_initial_state,
+A short hand AnnealingSchedule constructor that uses the initial_state_default,
 which is the most common case for the conventions of this implementation.
 """
-AnnealingSchedule(A,B) = AnnealingSchedule(A, B, default_initial_state)
-
+AnnealingSchedule(A,B) = AnnealingSchedule(A, B, initial_state_default)
 
 #predefining Pauli Matrices
-const IMAT = SparseArrays.sparse([1,2], [1,2], [1.0+0im;1.0+0im])
-const XMAT = SparseArrays.sparse([1,2], [2,1], [1.0+0im;1.0+0im])
-const YMAT = SparseArrays.sparse([1,2], [2,1], [-im;im])
-const ZMAT = SparseArrays.sparse([1,2], [1,2], [1.0+0im;-1.0+0im])
+const _IMAT = SparseArrays.sparse([1,2], [1,2], [1.0+0im;1.0+0im])
+const _XMAT = SparseArrays.sparse([1,2], [2,1], [1.0+0im;1.0+0im])
+const _YMAT = SparseArrays.sparse([1,2], [2,1], [-im;im])
+const _ZMAT = SparseArrays.sparse([1,2], [1,2], [1.0+0im;-1.0+0im])
 
 
 """
 ground state of sum_i A(0) X_i where A(0) > 0 and B(0) = 0
 """
-function default_initial_state(n)
+function initial_state_default(n)
     return complex(foldl(kron,[[1;-1] for i in 1:n]) ./ (2^(n/2)))
 end
 
