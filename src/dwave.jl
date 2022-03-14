@@ -293,7 +293,7 @@ function write_dwisc(outfile::String, ρ, ising_model, qubit_ids; simulated_num_
 
     for state_int in 0:(2^n-1)
         prob = probs[state_int+1]
-        spin_vector = int2spin(state_int, pad=n)
+        spin_vector = int_to_spin(state_int, pad=n)
         energy = eval_ising_state_energy(spin_vector, ising_model)
 
         sol_data = Dict(
