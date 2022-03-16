@@ -4,6 +4,7 @@ QuantumAnnealing.jl Change Log
 ### Staged
 - Add a generic Magnus expansion solver for any order
 - Update hard-coded Magnus expansion solver to support orders 1 through 4
+- Improve default initial number of steps in `simulate`
 - Change default solver order from 2 to 4 (breaking)
 - Update d-wave simulation tools to use adaptive solvers (breaking)
 - Reversed coefficient ordering of `get_quadratic_coefficients` (breaking)
