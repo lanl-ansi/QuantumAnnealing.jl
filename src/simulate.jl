@@ -109,11 +109,14 @@ end
 
 
 function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, state_steps=nothing)
-    if steps < 2
-        error("at least two steps are required by simulate_fixed_order, given $(steps)")
-    end
     if !(1 <= order && order <= 4)
         error("simulate_fixed_order only supports orders from 1-to-4, given $(order)")
+    end
+    if steps < 2
+        error("at least two simulation steps are required by simulate_fixed_order, given $(steps)")
+    end
+    if steps < annealing_time/1000
+        @warn("the number of simulation steps ($(steps)) is small relative to the annealing time ($(round(Int, annealing_time))), this may cause numerical issues.")
     end
 
     n = _check_ising_model_ids(ising_model)
@@ -400,6 +403,9 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
     if order > 10
         @warn("magnus expansion orders above 10 can produce numerical stability issues, given $(order)", maxlog=1)
     end
+    if steps < annealing_time/1000
+        @warn("the number of simulation steps ($(steps)) is small relative to the annealing time ($(round(Int, annealing_time))), this may cause numerical issues.")
+    end
 
     n = _check_ising_model_ids(ising_model)
 
@@ -497,7 +503,7 @@ constant_field_z - vector of constant biases in the Z basis on each qubit. Defau
 The parameters `mean_tol` and `max_tol` specify the desired simulation accuracy.
 The `silence` parameter can be used to suppress the progress log.
 """
-function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule; steps=2, order=4, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
+function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule; steps=0, order=4, mean_tol=1e-6, max_tol=1e-4, iteration_limit=100, silence=false, state_steps=nothing, kwargs...)
     start_time = time()
     mean_delta = mean_tol + 1.0
     max_delta = max_tol + 1.0
@@ -507,9 +513,13 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
         simulate_method = simulate_flexible_order
     end
 
+    if steps <= 1
+        steps = max(2, round(Int, annealing_time/100))
+    end
+
     if !silence
         println()
-        println("order: $(order)  method: $(simulate_method)")
+        println("\033[1mmethod: $(simulate_method)  order: $(order)  steps: $(steps)\033[0m")
         println("iter |  steps  |    max(Δ)    |    mean(Δ)   |")
     end
 
