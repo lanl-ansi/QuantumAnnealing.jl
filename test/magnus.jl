@@ -57,8 +57,7 @@
             aqc[3] * x_component + bqc[3] * z_component,
         ]
 
-        Ω_list_tmp = QuantumAnnealing._magnus_generator(H, order)
-        Ω_list2 = [QuantumAnnealing._hamiltonian_eval(δs, Ωi) for Ωi in Ω_list_tmp]
+        Ω_list2 = QuantumAnnealing._magnus_generator(δs, H, order)
 
         for i in 1:order
             @test isapprox(Ω_list1[i], Ω_list2[i])

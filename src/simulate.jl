@@ -151,13 +151,12 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
     for i in 1:(steps-1)
         s0 = s_steps[i]
         s1 = s_steps[i+1]
-        δs = s1 - s0
 
         Ω_list = _Ω_list(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
         #for (i,Ωi) in enumerate(Ω_list)
         #   println("Ω_$(i)")
-        #   display(Matrix(_hamiltonian_eval2(δs, Ωi)))
+        #   display(Matrix(Ωi))
         #end
 
         U_next = exp(Matrix(sum(Ω_list)))
@@ -367,7 +366,7 @@ end
 
 
 # https://iopscience.iop.org/article/10.1088/2399-6528/aab291
-function _magnus_generator(H::Vector, order::Int)
+function _magnus_generator(δs::Real, H::Vector, order::Int)
     @assert(order >= 1)
 
     Ω_list = [_hamiltonian_integrate(H)]
@@ -387,6 +386,8 @@ function _magnus_generator(H::Vector, order::Int)
 
         push!(Ω_list, Ω_n)
     end
+
+    Ω_list = [_hamiltonian_eval(δs, Ω_n) for Ω_n in Ω_list]
 
     return Ω_list
 end
@@ -446,7 +447,6 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
     for i in 1:(steps-1)
         s0 = s_steps[i]
         s1 = s_steps[i+1]
-        δs = s1 - s0
 
         aqc = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
         bqc = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
@@ -463,15 +463,14 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
             aqc[3] * x_component + bqc[3] * z_component,
         ]
 
-        #Ω_list = _magnus_generator([Matrix(h) for h in H], order)
-        Ω_list = _magnus_generator(H, order)
+        #Ω_list = _magnus_generator(s1 - s0, [Matrix(h) for h in H], order)
+        Ω_list = _magnus_generator(s1 - s0, H, order)
         #for (i,Ωi) in enumerate(Ω_list)
         #   println("Ω_$(i)")
-        #   display(Matrix(_hamiltonian_eval2(δs, Ωi)))
+        #   display(Matrix(Ωi))
         #end
-        Ω = sum(_hamiltonian_eval(δs, Ωi) for Ωi in Ω_list)
 
-        U_next = exp(Matrix(Ω))
+        U_next = exp(Matrix(sum(Ω_list)))
         U = U_next * U
 
         if track_states
