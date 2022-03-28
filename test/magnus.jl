@@ -43,7 +43,7 @@
         end
 
         H_parts = QuantumAnnealing._H_parts(x_component, z_component, order)
-        Ω_list1 = QuantumAnnealing._Ω_list(annealing_time, s0, s1, annealing_schedule, H_parts, order)
+        Ω_list1 = QuantumAnnealing._Ω_list_optimized(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
         aqc = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.A, s0, s1)
         bqc = QuantumAnnealing._get_quadratic_coefficients(annealing_schedule.B, s0, s1)
@@ -57,7 +57,7 @@
             aqc[3] * x_component + bqc[3] * z_component,
         ]
 
-        Ω_list2 = QuantumAnnealing._magnus_generator(δs, H, order)
+        Ω_list2 = QuantumAnnealing._Ω_list_generic(δs, H, order)
 
         for i in 1:order
             @test isapprox(Ω_list1[i], Ω_list2[i])

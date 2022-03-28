@@ -2,6 +2,9 @@ QuantumAnnealing.jl Change Log
 ==============================
 
 ### Staged
+- nothing
+
+### v0.2.0
 - Add a generic Magnus expansion solver for any order
 - Update hard-coded Magnus expansion solver to support orders 1 through 4
 - Improve default initial number of steps in `simulate`

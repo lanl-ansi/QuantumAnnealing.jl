@@ -108,12 +108,13 @@ function hamiltonian_transverse_ising(ising_model::Dict, annealing_schedule::Ann
 end
 
 
-function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, state_steps=nothing)
+"a Magnus expansion implementation simulate specialized to two quadratic functions of orders 1 to 4"
+function simulate_magnus_optimized(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, state_steps=nothing)
     if !(1 <= order && order <= 4)
-        error("simulate_fixed_order only supports orders from 1-to-4, given $(order)")
+        error("simulate_magnus_optimized only supports orders from 1-to-4, given $(order)")
     end
     if steps < 2
-        error("at least two simulation steps are required by simulate_fixed_order, given $(steps)")
+        error("at least two simulation steps are required by simulate_magnus_optimized, given $(steps)")
     end
     if steps < annealing_time/1000
         @warn("the number of simulation steps ($(steps)) is small relative to the annealing time ($(round(Int, annealing_time))), this may cause numerical issues.")
@@ -152,7 +153,7 @@ function simulate_fixed_order(ising_model::Dict, annealing_time::Real, annealing
         s0 = s_steps[i]
         s1 = s_steps[i+1]
 
-        Ω_list = _Ω_list(annealing_time, s0, s1, annealing_schedule, H_parts, order)
+        Ω_list = _Ω_list_optimized(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
         #for (i,Ωi) in enumerate(Ω_list)
         #   println("Ω_$(i)")
@@ -197,7 +198,7 @@ function _H_parts(x_component, z_component, order::Int)
 end
 
 
-function _Ω_list(annealing_time::Real, s0::Real, s1::Real, annealing_schedule::AnnealingSchedule, H_parts::Dict, order::Int)
+function _Ω_list_optimized(annealing_time::Real, s0::Real, s1::Real, annealing_schedule::AnnealingSchedule, H_parts::Dict, order::Int)
     @assert(1 <= order && order <= 4)
     δs = s1 - s0
     δst = annealing_time*δs
@@ -304,7 +305,7 @@ function _bernoulli_factorial(n)
     return Float64(v[1]/factorial(big(n)))
 end
 
-"given to matricies, applies the commutator operation"
+"given to matrices, applies the commutator operation"
 function _matrix_commutator(a,b)
     return a*b - b*a
 end
@@ -366,7 +367,7 @@ end
 
 
 # https://iopscience.iop.org/article/10.1088/2399-6528/aab291
-function _magnus_generator(δs::Real, H::Vector, order::Int)
+function _Ω_list_generic(δs::Real, H::Vector, order::Int)
     @assert(order >= 1)
 
     Ω_list = [_hamiltonian_integrate(H)]
@@ -394,10 +395,10 @@ end
 
 
 """
-an any-order magnus expansion solver with a fixed number of time steps
+a generic Magnus expansion solver with a fixed number of time steps
 """
-function simulate_flexible_order(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
-    @warn("this any-order magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
+function simulate_magnus_generic(ising_model::Dict, annealing_time::Real, annealing_schedule::AnnealingSchedule, steps::Int, order::Int; initial_state=nothing, constant_field_x=nothing, constant_field_z=nothing, state_steps=nothing)
+    @warn("this generic magnus expansion solver is not optimized, runtime overheads for high orders are significant", maxlog=1)
     if steps < 2
         error("at least two steps are required by simulate, given $(steps)")
     end
@@ -463,8 +464,8 @@ function simulate_flexible_order(ising_model::Dict, annealing_time::Real, anneal
             aqc[3] * x_component + bqc[3] * z_component,
         ]
 
-        #Ω_list = _magnus_generator(s1 - s0, [Matrix(h) for h in H], order)
-        Ω_list = _magnus_generator(s1 - s0, H, order)
+        #Ω_list = _Ω_list_generic(s1 - s0, [Matrix(h) for h in H], order)
+        Ω_list = _Ω_list_generic(s1 - s0, H, order)
         #for (i,Ωi) in enumerate(Ω_list)
         #   println("Ω_$(i)")
         #   display(Matrix(Ωi))
@@ -507,9 +508,9 @@ function simulate(ising_model::Dict, annealing_time::Real, annealing_schedule::A
     mean_delta = mean_tol + 1.0
     max_delta = max_tol + 1.0
 
-    simulate_method = simulate_fixed_order
+    simulate_method = simulate_magnus_optimized
     if order > 4 || haskey(kwargs, :constant_field_x) || haskey(kwargs, :constant_field_z)
-        simulate_method = simulate_flexible_order
+        simulate_method = simulate_magnus_generic
     end
 
     if steps <= 1
