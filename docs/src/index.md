@@ -93,7 +93,7 @@ QuantumAnnealing provides the [`read_bqpjson`](@ref) function for reading `bqpjs
 
 As part of [D-Wave Systems' documentation](https://docs.dwavesys.com/docs/latest/doc_physical_properties.html) annealing schedules are provided as `xlsx` files
 with four columns `s`, `A(s)`, `B(s)`, `C (normalized)`.
-The [`parse_dwave_annealing_schedule`](@ref) parses this data (in `csv` format) and converts it into the conventions used by QuantumAnnealing.
+The [`read_dwave_annealing_schedule`](@ref) parses this data (in `csv` format) and converts it into the conventions used by QuantumAnnealing.
 
 Users are strongly encouraged to download annealing schedules for specific
 D-Wave Systems devices of interest, however a canonical D-Wave annealing
@@ -111,7 +111,7 @@ preliminary testing and debugging.
 Although the _global_ annealing schedule is fixed in D-Wave hardware an
 [_annealing schedule parameter_](https://docs.dwavesys.com/docs/latest/c_qpu_annealing.html#varying-the-global-anneal-schedule) can be used to modify how the schedule is 
 executed in time by specifying a list of control points. QuantumAnnealing 
-provides the function [`dwave_annealing_protocol`](@ref) to apply these changes
+provides the function [`annealing_protocol_dwave`](@ref) to apply these changes
 to an annealing schedule inside of QuantumAnnealing.
 
 ### D-Wave Simulation
@@ -133,16 +133,16 @@ state\_index = \sum^n_{i = 1} 2^{i-1} q_i
 ```
 In this encoding, qubit 1 (i.e. $q_1$) is the least significant digit and qubit $n$ (i.e. $q_n$) is the most significant digit.
 For example, in a 3 qibit system the a state value of 4 is equivalent to the binary array in Julia `[0,0,1]`.
-The translation functions [`int2binary`](@ref) and [`binary2int`](@ref) performs these conversions following the code's conventions.
+The translation functions [`int_to_binary`](@ref) and [`binary_to_int`](@ref) performs these conversions following the code's conventions.
 
 When printing qubit states as strings using the bra-ket notation (i.e. `|xyz⟩`) the least significant qubit is presented as the right most value.
 For example, in a 3 qubit system the state index 4 is presented as `|100⟩` in the bra-ket notation.
-The translation function [`binary2braket`](@ref) performs this encoding.
+The translation function [`binary_to_braket`](@ref) performs this encoding.
 
 When translating binary 0/1 qubit values into up/down spin values the following conversion is used $\sigma_i = (-1)^{q_i}$, specifically $0 \rightarrow 1$ (up) and $1 \rightarrow -1$ (down).
 This conversion is done so that the following property holds, $mod(q_1 + q_2, 2) = \sigma_1 \sigma_2$.
-The function [`binary2spin`](@ref) performs this translation.
-When presenting up/down qubit states as strings using the bra-ket notation the values are presented as $\uparrow$/$\downarrow$ using the helper function [`spin2braket`](@ref).
+The function [`binary_to_spin`](@ref) performs this translation.
+When presenting up/down qubit states as strings using the bra-ket notation the values are presented as $\uparrow$/$\downarrow$ using the helper function [`spin_to_braket`](@ref).
 For example, in a 3 qubit system the state index 4 is presented as `|↓↑↑⟩` in the up/down bra-ket notation.
 
 

@@ -4,7 +4,7 @@
 Modules = [QuantumAnnealing]
 Pages   = ["base.jl"]
 Order   = [:function]
-Private  = true
+Private = false
 ```
 
 # Simulate Functions
@@ -12,14 +12,14 @@ Private  = true
 Modules = [QuantumAnnealing]
 Pages   = ["simulate.jl"]
 Order   = [:function]
-Private  = true
+Private = false
 ```
 
 ```@autodocs
 Modules = [QuantumAnnealing]
 Pages   = ["simulate_de.jl"]
 Order   = [:function]
-Private  = true
+Private = false
 ```
 
 ## Annealing Schedules
@@ -37,7 +37,7 @@ AS_DW_QUADRATIC
 Modules = [QuantumAnnealing]
 Pages   = ["ising.jl"]
 Order   = [:function]
-Private  = true
+Private = false
 ```
 
 # D-Wave Functions
@@ -45,5 +45,5 @@ Private  = true
 Modules = [QuantumAnnealing]
 Pages   = ["dwave.jl"]
 Order   = [:function]
-Private  = true
+Private = false
 ```
