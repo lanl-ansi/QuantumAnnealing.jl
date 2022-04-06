@@ -162,8 +162,8 @@ end
     end
 
     @testset "boltzmann sampling, 1 qubit" begin
-        @test isapprox(sample_boltzmann(one_spin_H, 0), [0.5, 0.5])
-        @test isapprox(sample_boltzmann(one_spin_H, 1, β=100), [0, 1])
+        @test isapprox(z_probabilities_boltzmann(one_spin_H, 0, 1), [0.5, 0.5])
+        @test isapprox(z_probabilities_boltzmann(one_spin_H, 1, 100), [0, 1])
     end
 end
 
