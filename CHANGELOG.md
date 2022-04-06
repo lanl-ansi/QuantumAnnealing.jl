@@ -2,7 +2,7 @@ QuantumAnnealing.jl Change Log
 ==============================
 
 ### Staged
-- nothing
+- Add Boltzmann sampling
 
 ### v0.2.0
 - Add a generic Magnus expansion solver for any order
