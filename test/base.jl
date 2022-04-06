@@ -161,6 +161,10 @@ end
         @test isapprox(H_10, [2.0 0.0 0.0 0.0; 0.0 -2.0 0.0 0.0; 0.0 0.0 -2.0 0.0; 0.0 0.0 0.0 2.0])
     end
 
+    @testset "boltzmann sampling, 1 qubit" begin
+        @test isapprox(sample_boltzmann(one_spin_H, 0), [0.5, 0.5])
+        @test isapprox(sample_boltzmann(one_spin_H, 1, β=100), [0, 1])
+    end
 end
 
 
@@ -211,6 +215,5 @@ end
     end
 
 end
-
 
 
