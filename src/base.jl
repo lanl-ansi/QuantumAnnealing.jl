@@ -166,9 +166,9 @@ function print_z_state_probabilities(density::Matrix; limit=50, sort=false)
     end
 end
 
-function z_probabilities_boltzmann(H::Function, s::Real, β::Real)
+function distribution_gibbs(H::Function, s::Real, β::Real)
     tr(A) = sum([A[i,i] for i=1:(size(A)[1])])
     exp_ham = exp(-β * Matrix(H(s)))
     exp_ham = exp_ham ./ tr(exp_ham)
-    return [real(exp_ham[i,i]) for i = 1:(size(exp_ham)[1])]
+    return exp_ham
 end
