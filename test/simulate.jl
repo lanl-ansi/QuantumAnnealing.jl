@@ -429,6 +429,11 @@ end
         @test isapprox(two_spin_ρ(1.0), ρ)
     end
 
+    @testset "1 qubit, function schedule, analytical solution, with kwargs" begin
+        ρ = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, saveat=[1])
+        @test isapprox(one_spin_ρ(1.0), ρ)
+    end
+
     @testset "1 qubit, function schedule, constant terms" begin
         ρ = simulate_magnus_generic(one_spin_model, 1.0, AS_CIRCULAR, 100, 4, constant_field_x=[1], constant_field_z=[1])
         ρ_de = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])

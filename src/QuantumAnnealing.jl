@@ -1,5 +1,5 @@
 module QuantumAnnealing
-
+    import LinearAlgebra
     import CSV
     import SparseArrays
     import JSON
