@@ -165,3 +165,10 @@ function print_z_state_probabilities(density::Matrix; limit=50, sort=false)
         end
     end
 end
+
+function distribution_gibbs(H::Function, s::Real, β::Real)
+    tr(A) = sum([A[i,i] for i=1:(size(A)[1])])
+    exp_ham = exp(-β * Matrix(H(s)))
+    exp_ham = exp_ham ./ tr(exp_ham)
+    return exp_ham
+end
