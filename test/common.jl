@@ -45,7 +45,7 @@ end
 
 function two_spin_ρ(t; s=1.0)
     s0 = 1/2*cos(π/4*s*sqrt(1+64*t^2/π^2))*sqrt(1-sin(π/2*s)) +
-        (8im*t*sqrt(1-sin(π/2*s)) + sqrt(1+sin(π/2*s)))*sin(π/4*s*sqrt(1+64*t^2/π^2))/(2*sqrt(1+64*t^2/π^2))
+        (8im*t*sqrt(1-sin(π/2*s))/π + sqrt(1+sin(π/2*s)))*sin(π/4*s*sqrt(1+64*t^2/π^2)) / (2*sqrt(1+64*t^2/π^2))
     s1 = -(cos(π/4*s*sqrt(1+64*t^2/π^2))*(1+sin(π/2*s)) + 
         ((-cos(π/2*s) + 8im*t*(1+sin(π/2*s))/π)*(sin(π/4*s*sqrt(1+64*t^2/π^2))))/(sqrt(1+64*t^2/π^2))
         )/(2*sqrt(1+sin(π/2*s)))
