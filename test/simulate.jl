@@ -167,7 +167,7 @@ end
     end
 end
 
-@testset "validate analytic models" begin
+@testset "analytic models, unitary check" begin
     @testset "one qubit model" begin
         s_vals = 0.0:0.5:1.0
         for s in s_vals

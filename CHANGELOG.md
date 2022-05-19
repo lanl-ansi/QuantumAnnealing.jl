@@ -2,9 +2,9 @@ QuantumAnnealing.jl Change Log
 ==============================
 
 ### Staged
-- Add Gibbs distribution
-- Fix kwargs bug in simulate_de
-- Fix analytic two spin model for non-integer s
+- Add Gibbs distribution (#34)
+- Fix kwargs bug in simulate_de (#39)
+- Fix analytic two spin model for non-integer s (#40)
 
 ### v0.2.0
 - Add a generic Magnus expansion solver for any order
