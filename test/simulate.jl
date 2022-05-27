@@ -167,6 +167,23 @@ end
     end
 end
 
+@testset "analytic models, unitary check" begin
+    @testset "one qubit model" begin
+        s_vals = 0.0:0.5:1.0
+        for s in s_vals
+            ρ = one_spin_ρ(100.0, s=s)
+            @test tr(ρ) == 1
+        end
+    end
+
+    @testset "two qubit model" begin
+        s_vals = 0.0:0.5:1.0
+        for s in s_vals
+            ρ = two_spin_ρ(100.0, s=s)
+            @test tr(ρ) == 1
+        end
+    end
+end
 
 @testset "simulate, generic magnus expansion" begin
     @testset "1 qubit, adaptive, orders 1 to 8" begin
@@ -421,6 +438,11 @@ end
 
     @testset "1 qubit, function schedule, analytical solution" begin
         ρ = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6)
+        @test isapprox(one_spin_ρ(1.0), ρ)
+    end
+
+    @testset "1 qubit, function schedule, analytical solution with kwargs" begin
+        ρ = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, saveat=[1])
         @test isapprox(one_spin_ρ(1.0), ρ)
     end
 
