@@ -144,7 +144,7 @@ function simulate_magnus_optimized(ising_model::Dict, annealing_time::Real, anne
     s_steps = range(0, 1, length=steps)
     R_current = R0
     U = foldl(kron, [_IMAT for i = 1:n])
-
+    U_next = similar(U)
     if track_states
         push!(state_steps, R_current)
     end
@@ -160,7 +160,7 @@ function simulate_magnus_optimized(ising_model::Dict, annealing_time::Real, anne
         #   display(Matrix(Ωi))
         #end
 
-        U_next = exp(Matrix(sum(Ω_list)))
+        U_next = LinearAlgebra.exp!(Matrix(sum(Ω_list)))
         U = U_next * U
 
         if track_states
@@ -471,7 +471,7 @@ function simulate_magnus_generic(ising_model::Dict, annealing_time::Real, anneal
         #   display(Matrix(Ωi))
         #end
 
-        U_next = exp(Matrix(sum(Ω_list)))
+        U_next = LinearAlgebra.exp!(Matrix(sum(Ω_list)))
         U = U_next * U
 
         if track_states

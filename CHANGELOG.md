@@ -2,6 +2,7 @@ QuantumAnnealing.jl Change Log
 ==============================
 
 ### Staged
+- Reduce memory usage in simulate and simulate_de
 - Add Gibbs distribution (#34)
 - Fix kwargs bug in simulate_de (#39)
 - Fix analytic two spin model for non-integer s (#40)

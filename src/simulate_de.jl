@@ -41,7 +41,8 @@ function simulate_de(ising_model, annealing_time, annealing_schedule, reltol; ab
 
     s_range = (0.0, 1.0)
     prob = DifferentialEquations.ODEProblem(schrod_eq, initial_state, s_range, annealing_time)
-    sol = DifferentialEquations.solve(prob; abstol=abstol, reltol=reltol, alg_hints=[:nonstiff], kwargs...)
+    sol = DifferentialEquations.solve(prob; abstol=abstol, reltol=reltol, alg_hints=[:nonstiff], saveat=[1.0], kwargs...)
+
 
     state = sol(1)
     density = state * state'
