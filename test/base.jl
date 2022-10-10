@@ -167,6 +167,31 @@ end
     end
 end
 
+@testset "Analytic Density Matrices" begin
+    @testset "One Spin" begin
+        one_spin_s_0 = one_spin_ρ(2, s=0)
+        one_spin_s_0123 = one_spin_ρ(2, s=0.123)
+        one_spin_s_05 = one_spin_ρ(2, s=0.5)
+        one_spin_s_1 = one_spin_ρ(2, s=1)
+
+        @test isapprox(sum([one_spin_s_0[i,i] for i in 1:2]), 1)
+        @test isapprox(sum([one_spin_s_0123[i,i] for i in 1:2]), 1)
+        @test isapprox(sum([one_spin_s_05[i,i] for i in 1:2]), 1)
+        @test isapprox(sum([one_spin_s_1[i,i] for i in 1:2]), 1)
+    end
+
+    @testset "Two Spin" begin
+        two_spin_s_0 = two_spin_ρ(2, s=0)
+        two_spin_s_0123 = two_spin_ρ(2, s=0.123)
+        two_spin_s_05 = two_spin_ρ(2, s=0.5)
+        two_spin_s_1 = two_spin_ρ(2, s=1)
+
+        @test isapprox(sum([two_spin_s_0[i,i] for i in 1:4]), 1)
+        @test isapprox(sum([two_spin_s_0123[i,i] for i in 1:4]), 1)
+        @test isapprox(sum([two_spin_s_05[i,i] for i in 1:4]), 1)
+        @test isapprox(sum([two_spin_s_1[i,i] for i in 1:4]), 1)
+    end
+end
 
 @testset "csv annealing schedules" begin
 
