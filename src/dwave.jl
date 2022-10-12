@@ -187,16 +187,18 @@ end
 
 """
 Function to modify an existing annealing schedule to use a customized
-annealing schedule (asch).  These parameters are the same as those
-used in a dwisc call or a dwave schedule.
+annealing schedule (asch) or h gain schedule (hgs).  These parameters
+are the same as those used in a dwisc call or a dwave schedule.
 Inputs:
 annealing_schedule - annealing_schedule
 
 Parameters:
 asch - This is the annealing-schedule parameter.  This is a list of tuples of the form
        [(s₀,s_effective₀), (s₀,s_effective₁), ..., (sₙ,s_effectiveₙ)].
+hgs - This is the h_gain_schedule parameter.  This is a list of tuples of the form
+       [(s₀,hgs(s₀)), (s₀,hgs(s₁)), ..., (sₙ,hgs(sₙ))].
 """
-function annealing_protocol_dwave(annealing_schedule::AnnealingSchedule; asch=[(0,0) (1,1)])
+function annealing_protocol_dwave(annealing_schedule::AnnealingSchedule; asch=[(0,0) (1,1)], hgs = [(0,1), (1,1)])
     asch_slopes = zeros(length(asch)-1)
     for i in 1:(length(asch)-1)
         s0,s_eff_0 = asch[i]
@@ -209,9 +211,24 @@ function annealing_protocol_dwave(annealing_schedule::AnnealingSchedule; asch=[(
         return sum([(asch_slopes[i]*(s-asch[i][1]) + asch[i][2]) * (asch[i][1] <= s < asch[i+1][1]) for i = 1:(length(asch)-1)]) + ((s == asch[end][1])*asch[end][2])
     end
 
+    hgs_slopes = zeros(length(asch)-1)
+    for i in 1:(length(hgs)-1)
+        s0,s_eff_0 = hgs[i]
+        s1,s_eff_1 = hgs[i+1]
+        hgs_slopes[i] = (s_eff_1 - s_eff_0)/(s1 - s0)
+    end
+
+    #branchless piecewise function using linear interpolation from y = m*(x-x0) + y0
+    function hgs_func(s)
+        return sum([(hgs_slopes[i]*(s-hgs[i][1]) + hgs[i][2]) * (hgs[i][1] <= s < hgs[i+1][1]) for i = 1:(length(hgs)-1)]) + ((s == hgs[end][1])*hgs[end][2])
+    end
+
+
     new_annealing_schedule = AnnealingSchedule(
         s -> annealing_schedule.A(asch_func(s)),
-        s -> annealing_schedule.B(asch_func(s))
+        s -> annealing_schedule.B(asch_func(s)),
+        annealing_schedule.init_default,
+        hgs_func
     )
     return new_annealing_schedule
 end
