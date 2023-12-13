@@ -17,6 +17,24 @@ function eval_ising_state_energy(spin_state::Vector, ising_model::Dict)
 end
 
 """
+given an Ising model provides its sparse matrix representation
+"""
+function ising_to_matrix(ising_model::Dict)
+    n = maximum(max(k...) for (k,v) in ising_model)
+
+    mat = spzeros(2^n, 2^n)
+    for (key, val) in ising_model
+        if length(key) > 1
+            mat += val*foldl(kron,[key[1] == i || key[2] == i ? _ZMAT : _IMAT for i in n:-1:1])
+        else
+            mat += val*foldl(kron,[key[1] == i ? _ZMAT : _IMAT for i in n:-1:1])
+        end
+    end
+
+    return mat
+end
+
+"""
 given an Ising model computes a mapping from state integers to energy values
 """
 function compute_ising_state_energies(ising_model::Dict)
