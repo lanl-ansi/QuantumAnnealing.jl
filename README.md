@@ -3,7 +3,7 @@
 Status:
 [![CI](https://github.com/lanl-ansi/QuantumAnnealing.jl/workflows/CI/badge.svg)](https://github.com/lanl-ansi/QuantumAnnealing.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/lanl-ansi/QuantumAnnealing.jl/branch/main/graph/badge.svg?token=0MYSS2hWWH)](https://codecov.io/gh/lanl-ansi/QuantumAnnealing.jl)
-[![Documentation](https://github.com/lanl-ansi/QuantumAnnealing.jl/workflows/Documentation/badge.svg)](https://lanl-ansi.github.io/QuantumAnnealing.jl/stable/)
+[![Documentation](https://github.com/lanl-ansi/QuantumAnnealing.jl/actions/workflows/documentation.yml/badge.svg)](https://lanl-ansi.github.io/QuantumAnnealing.jl/stable/)
 </p>
 
 
