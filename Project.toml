@@ -2,7 +2,7 @@ name = "QuantumAnnealing"
 uuid = "4832667a-bab9-40a8-88f6-be9efce3ea89"
 authors = ["Zach Morrell, Carleton Coffrin, Marc Vuffray"]
 repo = "https://github.com/lanl-ansi/QuantumAnnealing.jl"
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
