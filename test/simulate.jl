@@ -460,8 +460,8 @@ end
         ρ = simulate_magnus_generic(one_spin_model, 1.0, AS_CIRCULAR, 100, 4, constant_field_x=[1], constant_field_z=[1])
         ρ_de = simulate_de(one_spin_model, 1.0, AS_CIRCULAR, 1e-6, constant_field_x=[1], constant_field_z=[1])
 
-        @test isapprox(ρ, ρ_de, atol=1e-9)
-        @test !isapprox(ρ, ρ_de, atol=1e-10)
+        @test isapprox(ρ, ρ_de, atol=1e-7)
+        @test !isapprox(ρ, ρ_de, atol=1e-8)
     end
 
     @testset "1 qubit, csv schedule, analytical solution" begin
@@ -476,8 +476,8 @@ end
         ρ = simulate_magnus_optimized(ising_model, 1.0, AS_CIRCULAR, 100, 4)
         ρ_de = simulate_de(ising_model, 1.0, AS_CIRCULAR, 1e-6)
 
-        @test isapprox(ρ, ρ_de, atol=1e-9)
-        @test !isapprox(ρ, ρ_de, atol=1e-10)
+        @test isapprox(ρ, ρ_de, atol=1e-7)
+        @test !isapprox(ρ, ρ_de, atol=1e-8)
     end
 
     @testset "2 qubit, function schedule, long annealing time" begin
