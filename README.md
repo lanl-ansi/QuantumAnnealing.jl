@@ -45,7 +45,7 @@ print_z_state_probabilities(ρ)
 For a more comprehensive introduction see the [package documentation](https://lanl-ansi.github.io/QuantumAnnealing.jl/stable/).
 
 # Citation
-If QuantumAnnealing.jl proves useful in your work, please consider citing it using the following BibTeX citation:
+If QuantumAnnealing.jl proves useful in your work, please consider citing it using the following BibTeX citation for the pre-print, available [here](https://arxiv.org/abs/2404.14501):
 
 ```
 @misc{morrell2024quantumannealing,
