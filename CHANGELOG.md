@@ -2,7 +2,9 @@ QuantumAnnealing.jl Change Log
 ==============================
 
 ### Staged
-- nothing
+- Remove DifferentialEquations.jl as a dependency in favor of OrdiaryDiffEq.jl
+- Specify algorithm for `simulate_de` to avoid crashing issues
+- Update tests to remove lower bounds for `simulate_de` functions
 
 ### v0.2.1
 - Reduce memory usage in `simulate` and `simulate_de`
