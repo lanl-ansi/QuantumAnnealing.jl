@@ -1,6 +1,6 @@
 
 """
-simulator that uses the DifferentialEquations.jl differential equation solver
+simulator that uses the OrdinaryDiffEq.jl differential equation solver
 to solve the Schrodinger Equation, rather than the Magnus Expansion.  This
 simulator can run into issues at higher anneal times.  The API is the same as
 for the simulate function.
@@ -40,8 +40,8 @@ function simulate_de(ising_model, annealing_time, annealing_schedule, reltol; ab
     schrod_eq(state, time, s) = -im * time * H(s) * state
 
     s_range = (0.0, 1.0)
-    prob = DifferentialEquations.ODEProblem(schrod_eq, initial_state, s_range, annealing_time)
-    sol = DifferentialEquations.solve(prob; abstol=abstol, reltol=reltol, alg_hints=[:nonstiff], saveat=[1.0], kwargs...)
+    prob = OrdinaryDiffEq.ODEProblem(schrod_eq, initial_state, s_range, annealing_time)
+    sol = OrdinaryDiffEq.solve(prob, OrdinaryDiffEq.Tsit5(); abstol=abstol, reltol=reltol, saveat=[1.0], kwargs...)
 
 
     state = sol(1)
