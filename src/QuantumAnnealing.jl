@@ -4,7 +4,7 @@ module QuantumAnnealing
     import SparseArrays
     import JSON
     import Printf
-    import DifferentialEquations
+    import OrdinaryDiffEq
 
     include("base.jl")
     include("ising.jl")
