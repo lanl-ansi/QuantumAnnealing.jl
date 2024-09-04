@@ -101,7 +101,11 @@ function hamiltonian_transverse_ising(ising_model::Dict, annealing_schedule::Ann
     x_component = _sum_X(n)
     z_component = SparseArrays.spzeros(2^n, 2^n)
     for (tup,w) in ising_model
-        z_component += _kron_Z(n, tup, w)
+        if length(tup) == 1
+            z_component += annealing_schedule.h_gain_schedule(s) * _kron_Z(n, tup, w)
+        else
+            z_component += _kron_Z(n, tup, w)
+        end
     end
 
     return annealing_schedule.A(s) * x_component + annealing_schedule.B(s) * z_component
@@ -134,12 +138,6 @@ function simulate_magnus_optimized(ising_model::Dict, annealing_time::Real, anne
     R0 = initial_state * initial_state'
 
     x_component = _sum_X(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + _kron_Z(n, tup, w)
-    end
-
-    H_parts = _H_parts(x_component, z_component, order)
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
@@ -153,6 +151,19 @@ function simulate_magnus_optimized(ising_model::Dict, annealing_time::Real, anne
         s0 = s_steps[i]
         s1 = s_steps[i+1]
 
+        #modified to allow for h_gain_schedule.  using mean h_gain schedule of step
+        #as an approximation to avoid having to reformulate magnus expansion.
+        z_component = SparseArrays.spzeros(2^n, 2^n)
+        mean_hgs = (annealing_schedule.h_gain_schedule(s0) + annealing_schedule.h_gain_schedule(s1))/2
+        for (tup,w) in ising_model
+            if length(tup) == 1
+                z_component = z_component + mean_hgs * _kron_Z(n, tup, w)
+            else
+                z_component = z_component + _kron_Z(n, tup, w)
+            end
+        end
+
+        H_parts = _H_parts(x_component, z_component, order)
         Ω_list = _Ω_list_optimized(annealing_time, s0, s1, annealing_schedule, H_parts, order)
 
         #for (i,Ωi) in enumerate(Ω_list)
@@ -431,10 +442,6 @@ function simulate_magnus_generic(ising_model::Dict, annealing_time::Real, anneal
     R0 = initial_state * initial_state'
 
     x_component = _sum_X(n)
-    z_component = SparseArrays.spzeros(2^n, 2^n)
-    for (tup,w) in ising_model
-        z_component = z_component + _kron_Z(n, tup, w)
-    end
 
     s_steps = range(0, 1, length=steps)
     R_current = R0
@@ -448,6 +455,16 @@ function simulate_magnus_generic(ising_model::Dict, annealing_time::Real, anneal
     for i in 1:(steps-1)
         s0 = s_steps[i]
         s1 = s_steps[i+1]
+
+        mean_hgs = (annealing_schedule.h_gain_schedule(s0) + annealing_schedule.h_gain_schedule(s1))/2
+        z_component = SparseArrays.spzeros(2^n, 2^n)
+        for (tup,w) in ising_model
+            if length(tup) == 1
+                z_component = z_component + mean_hgs * _kron_Z(n, tup, w)
+            else
+                z_component = z_component + _kron_Z(n, tup, w)
+            end
+        end
 
         aqc = _get_quadratic_coefficients(annealing_schedule.A, s0, s1)
         bqc = _get_quadratic_coefficients(annealing_schedule.B, s0, s1)
