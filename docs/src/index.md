@@ -39,7 +39,7 @@ Specifically it solves the Schrödinger equation with a time dependent Hamiltoni
 ```math
 i \frac{d}{dt}\left|\Psi(t)\right\rangle = H(t)\left|\Psi(t)\right\rangle
 ```
-For $t \in [0, T]$ and for the initial condition $\left|\Psi_{0}\right\rangle$.
+For $t \in [0, T]$ and for the initial condition $\left|\Psi_{0}\right\rangle$.  Note that we are taking $\hbar = 1$.
 
 Currently the implementation focuses on solving Hamiltonians of the so-called Transverse-Field Ising model, which has the following form,
 ```math
