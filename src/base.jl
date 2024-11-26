@@ -11,13 +11,20 @@ struct AnnealingSchedule
     A::Function
     B::Function
     init_default::Function
+    h_gain_schedule::Function
 end
 
 """
 A short hand AnnealingSchedule constructor that uses the initial_state_default,
 which is the most common case for the conventions of this implementation.
 """
-AnnealingSchedule(A,B) = AnnealingSchedule(A, B, initial_state_default)
+AnnealingSchedule(A,B) = AnnealingSchedule(A, B, initial_state_default, one)
+
+"""
+A short hand AnnealingSchedule constructor that uses the Base.one function for the
+annealing schedule, but allows for a different inital state.
+"""
+AnnealingSchedule(A,B,init_default) = AnnealingSchedule(A, B, init_default, one)
 
 #predefining Pauli Matrices
 const _IMAT = SparseArrays.sparse([1,2], [1,2], [1.0+0im;1.0+0im])
