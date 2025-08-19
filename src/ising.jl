@@ -35,19 +35,19 @@ end
 """
 given an Ising model computes a mapping from energy values to collections of state integers
 """
-function compute_ising_energy_levels(ising_model::Dict)
+function compute_ising_energy_levels(ising_model::Dict; sigdigits=20, base=2)
     state_energies = compute_ising_state_energies(ising_model)
-
     energy_levels = Dict{Float64,Set{Int}}()
+    
     for (state_id, energy) in state_energies
+        energy = round(energy, sigdigits=sigdigits, base=base)
+
         if !haskey(energy_levels, energy)
             energy_levels[energy] = Set{Int}()
         end
         push!(energy_levels[energy], state_id)
     end
-
     energies = sort(collect(keys(energy_levels)))
-
     return [(energy=e, states=energy_levels[e]) for e in energies]
 end
 
