@@ -211,7 +211,8 @@ function annealing_protocol_dwave(annealing_schedule::AnnealingSchedule; asch=[(
 
     new_annealing_schedule = AnnealingSchedule(
         s -> annealing_schedule.A(asch_func(s)),
-        s -> annealing_schedule.B(asch_func(s))
+        s -> annealing_schedule.B(asch_func(s)),
+        annealing_schedule.init_default
     )
     return new_annealing_schedule
 end
