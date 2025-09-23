@@ -107,4 +107,48 @@
         @test dwisc_data["variable_ids"] == [100]
     end
 
+    @testset "1 qubit, function schedule, Annealing Protocol DWave Forward Annealing" begin
+        annealing_schedule = AS_DW_QUADRATIC
+        annealing_schedule_new = annealing_protocol_dwave(annealing_schedule)
+        @test annealing_schedule.A(0.0) == annealing_schedule_new.A(0.0)
+        @test annealing_schedule.A(0.5) == annealing_schedule_new.A(0.5)
+        @test annealing_schedule.A(1.0) == annealing_schedule_new.A(1.0)
+        @test annealing_schedule.B(0.0) == annealing_schedule_new.B(0.0)
+        @test annealing_schedule.B(0.5) == annealing_schedule_new.B(0.5)
+        @test annealing_schedule.B(1.0) == annealing_schedule_new.B(1.0)
+        @test annealing_schedule.init_default(1) == annealing_schedule_new.init_default(1)
+        
+        annealing_schedule = AS_LINEAR
+        annealing_schedule_new = annealing_protocol_dwave(annealing_schedule)
+        @test annealing_schedule.A(0.0) == annealing_schedule_new.A(0.0)
+        @test annealing_schedule.A(0.5) == annealing_schedule_new.A(0.5)
+        @test annealing_schedule.A(1.0) == annealing_schedule_new.A(1.0)
+        @test annealing_schedule.B(0.0) == annealing_schedule_new.B(0.0)
+        @test annealing_schedule.B(0.5) == annealing_schedule_new.B(0.5)
+        @test annealing_schedule.B(1.0) == annealing_schedule_new.B(1.0)
+        @test annealing_schedule.init_default(1) == annealing_schedule_new.init_default(1)
+    end
+
+    @testset "Annealing Protocol DWave Backward Annealing" begin
+        asch = [(0.0,1.0), (1.0,0.0)]
+        annealing_schedule = AS_DW_QUADRATIC
+        annealing_schedule_new = annealing_protocol_dwave(annealing_schedule, asch=asch)
+        @test annealing_schedule.A(0.0) == annealing_schedule_new.A(1.0)
+        @test annealing_schedule.A(0.5) == annealing_schedule_new.A(0.5)
+        @test annealing_schedule.A(1.0) == annealing_schedule_new.A(0.0)
+        @test annealing_schedule.B(0.0) == annealing_schedule_new.B(1.0)
+        @test annealing_schedule.B(0.5) == annealing_schedule_new.B(0.5)
+        @test annealing_schedule.B(1.0) == annealing_schedule_new.B(0.0)
+        @test annealing_schedule.init_default(1) == annealing_schedule_new.init_default(1)
+        
+        annealing_schedule = AS_LINEAR
+        annealing_schedule_new = annealing_protocol_dwave(annealing_schedule, asch = asch)
+        @test annealing_schedule.A(0.0) == annealing_schedule_new.A(1.0)
+        @test annealing_schedule.A(0.5) == annealing_schedule_new.A(0.5)
+        @test annealing_schedule.A(1.0) == annealing_schedule_new.A(0.0)
+        @test annealing_schedule.B(0.0) == annealing_schedule_new.B(1.0)
+        @test annealing_schedule.B(0.5) == annealing_schedule_new.B(0.5)
+        @test annealing_schedule.B(1.0) == annealing_schedule_new.B(0.0)
+        @test annealing_schedule.init_default(1) == annealing_schedule_new.init_default(1)
+    end
 end
